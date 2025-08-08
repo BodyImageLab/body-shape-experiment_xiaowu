@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>体型调整实验 · 最终版（整场一次上传 + BMI）</title>
+<title>体型调整实验 · 最终版（整场一次上传 + BMI + 防闪屏）</title>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
   :root { --bg:#121212; --txt:#e0e0e0; --acc:#ffcc00; --muted:#b9c0c7; }
@@ -18,7 +18,7 @@
   input{margin:8px;padding:10px;font-size:18px;border:2px solid var(--acc);border-radius:8px;background:#1e1e1e;color:#fff}
   .screen{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:24px}
   .screen.active{display:flex}
-  #stimulus{max-width:80%;height:60vh;display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+  #stimulus{max-width:80%;height:60vh;display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);will-change:opacity,transform}
   #fixation{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:64px;color:var(--acc)}
   .hint{position:absolute;font-size:24px;color:var(--acc);font-weight:600;background:rgba(30,30,30,.85);border:2px solid var(--acc);border-radius:10px;padding:10px 14px}
   .hint-left{left:8%;top:50%;transform:translateY(-50%);display:none}
@@ -149,6 +149,9 @@ let t0 = 0, startIdx = 0, enterLocked = false, experimentStartTime = 0;
 let taskType = '练习';
 let results = []; // 整场数据，最终作为 rows_json 上传
 
+/* ===== 防闪屏补丁：下一帧统一换图 ===== */
+let pendingIndex = null;
+
 /* ===== 工具函数 ===== */
 function enterFullscreen(){ const el=document.documentElement; if (el.requestFullscreen) el.requestFullscreen().catch(()=>{}); }
 function showScreen(key){ Object.values(screens).forEach(s=>s.classList.remove('active')); screens[key].classList.add('active'); }
@@ -184,6 +187,7 @@ function bmiFromIndex(series, index){
 function updateStimulus(){
   if (!imgList.length) return;
   idx = clamp(idx, 0, imgList.length-1);
+  // 不在这里立刻切换 src；仅用于试次刚开始的首帧
   stimulus.src = imgList[idx];
   stimulus.style.display = 'block';
   if (taskType === '练习'){
@@ -205,7 +209,7 @@ function saveRow(){
     series,                              // F / M
     selected_image: imgList[idx] || '',
     index: idx,
-    bmi: bmiFromIndex(series, idx),      // 关键：BMI
+    bmi: bmiFromIndex(series, idx),      // BMI
     start_index: startIdx,
     response_time: new Date().toISOString(),
     response_duration_ms: Date.now() - t0,
@@ -216,10 +220,24 @@ function saveRow(){
   results.push(row);
 }
 
-/* ===== 长按快速步进 ===== */
+/* ===== 长按快速步进（不立刻换图，交给渲染循环） ===== */
 function startHold(which){ stopHold(); const delta=(which==='f')?-1:+1; step(delta); holdKey=which; holdTimer=setInterval(()=>step(delta),HOLD_INTERVAL); }
 function stopHold(){ if (holdTimer){ clearInterval(holdTimer); holdTimer=null; } holdKey=null; }
-function step(delta){ if (!adjusting) return; idx = clamp(idx + delta, 0, imgList.length-1); updateStimulus(); }
+function step(delta){
+  if (!adjusting) return;
+  idx = clamp(idx + delta, 0, imgList.length-1);
+  pendingIndex = idx; // 等下一帧统一切图
+}
+
+/* ===== 渲染循环：一帧最多切一次图，降低闪屏 ===== */
+function renderLoop(){
+  if (pendingIndex !== null){
+    stimulus.src = imgList[pendingIndex];
+    pendingIndex = null;
+  }
+  requestAnimationFrame(renderLoop);
+}
+renderLoop();
 
 /* ===== 流程控制 ===== */
 function startPracticeBlock(){ taskType='练习'; practiceTrial=0; showScreen('pracG'); }
@@ -254,23 +272,53 @@ function buildPayload(){
     rows: results
   };
 }
+
+/* ===== 上传（先标准 JSON，失败则 no-cors 兜底） ===== */
 async function uploadAllResults(){
   const payload = buildPayload();
   const unloadGuard = (e)=>{ e.preventDefault(); e.returnValue=''; };
   window.addEventListener('beforeunload', unloadGuard);
 
   let lastErr = null;
-  for (let attempt=1; attempt<=3; attempt++){
-    try{
-      const res = await fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-      const data = await res.json().catch(()=>({ok:false, error:'bad json'}));
-      if (res.ok && data && data.ok){ window.removeEventListener('beforeunload', unloadGuard); return; }
-      lastErr = new Error((data && data.error) || ('HTTP '+res.status));
-    }catch(e){ lastErr = e; }
-    await new Promise(r=>setTimeout(r, 800));
+
+  // 尝试1：标准 JSON（可拿回执）
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    try {
+      const data = await res.json();
+      if (res.ok && data && data.ok) {
+        window.removeEventListener('beforeunload', unloadGuard);
+        return; // 成功
+      }
+    } catch(_) {}
+    if (res.ok) {
+      window.removeEventListener('beforeunload', unloadGuard);
+      return;
+    }
+    lastErr = new Error('HTTP '+res.status);
+  } catch (e) {
+    lastErr = e;
   }
-  window.removeEventListener('beforeunload', unloadGuard);
-  throw lastErr || new Error('upload failed');
+
+  // 兜底：避免预检/跨域阻断（发得出去但拿不到回执）
+  try {
+    await fetch(ENDPOINT, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload),
+      keepalive: true
+    });
+    window.removeEventListener('beforeunload', unloadGuard);
+    return;
+  } catch (e2) {
+    window.removeEventListener('beforeunload', unloadGuard);
+    throw lastErr || e2;
+  }
 }
 
 /* ===== 性别选择 → 自动预载 ===== */
@@ -315,7 +363,7 @@ window.addEventListener('keydown', (e)=>{
 
   if (adjusting){
     if (k==='f' || k==='j'){ if (holdKey!==k) startHold(k); }
-    else if (k==='r'){ idx = startIdx; updateStimulus(); }
+    else if (k==='r'){ idx = startIdx; pendingIndex = idx; } // 重置到起点，等下一帧切
     else if (k==='enter'){
       if (enterLocked) return; enterLocked = true;
 

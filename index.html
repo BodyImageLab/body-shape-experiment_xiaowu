@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>体型调整实验 · 自动预载（练习3 + 当前10 + 理想10 · 无长按延迟）</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#121212; --txt:#e0e0e0; --acc:#ffcc00; --muted:#b9c0c7; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:'Roboto',ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif;overflow:hidden}
+  body{display:flex;align-items:center;justify-content:center;padding:36px}
+  .hide-cursor{cursor:none}
+  h1,p{margin:10px 0;text-shadow:1px 1px 2px rgba(0,0,0,.7)}
+  .btn{background:var(--acc);color:#000;border:0;border-radius:8px;padding:12px 22px;font-size:18px;cursor:pointer;margin:8px;font-weight:600}
+  .btn[disabled]{opacity:.6;cursor:not-allowed}
+  .btn:hover{filter:brightness(1.05)}
+  input{margin:8px;padding:10px;font-size:18px;border:2px solid var(--acc);border-radius:8px;background:#1e1e1e;color:#fff}
+  .screen{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:24px}
+  .screen.active{display:flex}
+  #stimulus{max-width:80%;max-height:70vh;display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+  #fixation{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:64px;color:var(--acc)}
+  .hint{position:absolute;font-size:24px;color:var(--acc);font-weight:600;background:rgba(30,30,30,.85);border:2px solid var(--acc);border-radius:10px;padding:10px 14px}
+  .hint-left{left:8%;top:50%;transform:translateY(-50%);display:none}
+  .hint-right{right:8%;top:50%;transform:translateY(-50%);display:none}
+  #currentTypeLabel,#idealTypeLabel{font-size:26px;color:var(--acc);opacity:0;transition:opacity .2s;position:absolute;top:82%;left:50%;transform:translateX(-50%)}
+  #practicePrompt{position:absolute;top:82%;left:50%;transform:translateX(-50%);color:var(--acc);display:none}
+  .bar{width:66vw;max-width:900px;height:12px;background:#2a2a2a;border-radius:999px;overflow:hidden;margin-top:16px}
+  .bar>span{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd54f,#ffcc00)}
+  .muted{color:var(--muted);font-size:18px}
+</style>
+</head>
+<body>
+
+<!-- ========== 实验前指导语（点性别后自动预载） ========== -->
+<section id="guidelines" class="screen active">
+  <h1>欢迎您参加本实验！</h1>
+  <p>使用 <b>F</b>/<b>J</b> 调整体型，长按快速、点按精细；按 <b>Enter</b> 确认保存。</p>
+  <p class="muted">实验过程中将进入全屏并隐藏鼠标光标。</p>
+  <div>
+    <input id="studentId" placeholder="请输入学号" />
+    <input id="subjectNumber" placeholder="请输入被试序号" />
+  </div>
+  <p style="margin-top:6px">请选择您的性别（选择后将自动预加载）：</p>
+  <div>
+    <button id="maleButton" class="btn">男性</button>
+    <button id="femaleButton" class="btn">女性</button>
+  </div>
+  <div class="bar" style="margin-top:10px"><span id="preloadPg"></span></div>
+  <p id="preloadTip" class="muted">等待选择性别开始预加载…</p>
+  <button id="btnStartPractice" class="btn" disabled>进入练习</button>
+</section>
+
+<!-- ========== 练习指导语 ========== -->
+<section id="practiceGuidelines" class="screen">
+  <p>练习阶段！长按 “F/J” 快速调整；点按“F/J”精细调整。</p>
+  <p>按 <b>空格键</b> 开始练习。</p>
+</section>
+
+<!-- ========== 正式：当前体型 指导语 ========== -->
+<section id="currentGuidelines" class="screen">
+  <p>正式实验：<b>当前体型</b> 调整任务（10 次）</p>
+  <p>调整至<b>最接近您当前</b>的体型，按 <b>Enter</b> 保存；按 <b>空格键</b> 开始。</p>
+</section>
+
+<!-- ========== 正式：理想体型 指导语 ========== -->
+<section id="idealGuidelines" class="screen">
+  <p>正式实验：<b>理想体型</b> 调整任务（10 次）</p>
+  <p>调整至<b>您的理想体型</b>，按 <b>Enter</b> 保存；按 <b>空格键</b> 开始。</p>
+</section>
+
+<!-- ========== 刺激/提示/注视点 ========== -->
+<img id="stimulus" alt="stimulus">
+<div id="fixation">+</div>
+<div class="hint hint-left">长按“F”快速变瘦</div>
+<div class="hint hint-right">长按“J”快速变胖</div>
+<div id="currentTypeLabel">
+  <p>调至与您<b>当前最相近的体型</b>，按 <b>Enter</b> 确认。</p>
+</div>
+<div id="idealTypeLabel">
+  <p>调至您的<b>理想体型</b>，按 <b>Enter</b> 确认。</p>
+</div>
+<div id="practicePrompt" class="muted">熟悉后可按 <b>Enter</b> 结束本次练习</div>
+
+<!-- ========== 结束页 ========== -->
+<section id="thankYou" class="screen">
+  <h1>实验结束，感谢参与！</h1>
+  <p>按 <b>Q</b> 退出（刷新页面）。</p>
+</section>
+
+<script>
+/* ========= 自动识别本地/线上路径 ========= */
+const IS_PROD   = location.hostname.endsWith('github.io');
+const SITE_BASE = IS_PROD
+  ? 'https://BodyImageLab.github.io/body-shape-experiment_xiaowu/'
+  : './'; // 本地调试自动用相对路径
+
+const BASE_URL_F = SITE_BASE + 'img_F/';
+const BASE_URL_M = SITE_BASE + 'img_M/';
+
+/* ========= 命名与数量 ========= */
+const MAX_F = 76, MAX_M = 76;
+const F_EXT = 'png', M_EXT = 'png';
+let F_LIST = [];   // 如需自定义: ['F001.jpg', ...]
+let M_LIST = [];   // 同上
+
+/* ========= 试次数 ========= */
+const PRACTICE_TRIALS = 3;
+const CURRENT_TRIALS  = 10;
+const IDEAL_TRIALS    = 10;
+
+const FIX_MS = 800;
+const HOLD_INTERVAL = 40;
+
+/* ========= DOM ========= */
+const screens = {
+  guide: document.getElementById('guidelines'),
+  pracG: document.getElementById('practiceGuidelines'),
+  currG: document.getElementById('currentGuidelines'),
+  idealG: document.getElementById('idealGuidelines'),
+  thank: document.getElementById('thankYou')
+};
+const preloadPg = document.getElementById('preloadPg');
+const preloadTip = document.getElementById('preloadTip');
+const btnStartPractice = document.getElementById('btnStartPractice');
+const maleBtn = document.getElementById('maleButton');
+const femaleBtn = document.getElementById('femaleButton');
+
+const stimulus = document.getElementById('stimulus');
+const fixation = document.getElementById('fixation');
+const hintL = document.querySelector('.hint-left');
+const hintR = document.querySelector('.hint-right');
+const labelCurrent = document.getElementById('currentTypeLabel');
+const labelIdeal = document.getElementById('idealTypeLabel');
+const practicePrompt = document.getElementById('practicePrompt');
+
+const studentIdEl = document.getElementById('studentId');
+const subjectNumberEl = document.getElementById('subjectNumber');
+
+/* ========= 状态 ========= */
+let gender = null;            // 'Female' | 'Male'
+let series = 'F';             // 'F' | 'M'
+let imgList = [];             // 当前性别 URL 列表
+let idx = 0;
+let holdTimer = null, holdKey = null;
+let adjusting = false, preloaded = false;
+let practiceTrial = 0, currentTrial = 0, idealTrial = 0;
+let t0 = 0, startIdx = 0, enterLocked = false, experimentStartTime = 0;
+let taskType = '练习', results = [];
+
+/* ========= 工具 ========= */
+function enterFullscreen(){
+  const el=document.documentElement;
+  if (el.requestFullscreen) el.requestFullscreen();
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+}
+function showScreen(key){ Object.values(screens).forEach(s=>s.classList.remove('active')); screens[key].classList.add('active'); }
+function genNames(prefix, n, ext){ const a=[]; for (let i=1;i<=n;i++) a.push(`${prefix}${i}.${ext}`); return a; }
+function clamp(v,lo,hi){ return Math.min(hi, Math.max(lo,v)); }
+
+/* ========= 构造 URL 列表 ========= */
+function getSeriesURLs(which){
+  if (which === 'M'){
+    const names = M_LIST.length ? M_LIST : genNames('M', MAX_M, M_EXT);
+    return names.map(n => BASE_URL_M + n);
+  } else {
+    const names = F_LIST.length ? F_LIST : genNames('F', MAX_F, F_EXT);
+    return names.map(n => BASE_URL_F + n);
+  }
+}
+
+/* ========= 预加载（只预载当前性别） ========= */
+function preloadAll(urls){
+  return new Promise(resolve=>{
+    if (!urls.length){ resolve(); return; }
+    let loaded=0, total=urls.length;
+    const upd=()=>{ preloadPg.style.width=((loaded/total)*100).toFixed(1)+'%'; };
+    urls.forEach(u=>{
+      const im=new Image();
+      im.onload=im.onerror=()=>{ loaded++; upd(); if (loaded===total) resolve(); };
+      im.src=u;
+    });
+  });
+}
+
+/* ========= 呈现/索引 ========= */
+function updateStimulus(){
+  if (!imgList.length) return;
+  idx = clamp(idx, 0, imgList.length-1);
+  stimulus.src = imgList[idx];
+  stimulus.style.display = 'block';
+  if (taskType === '练习'){
+    hintL.style.display = 'block'; hintR.style.display = 'block';
+    practicePrompt.style.display = (practiceTrial < PRACTICE_TRIALS) ? 'block' : 'none';
+    labelCurrent.style.opacity = 0; labelIdeal.style.opacity = 0;
+  } else {
+    hintL.style.display = 'none'; hintR.style.display = 'none'; practicePrompt.style.display = 'none';
+    labelCurrent.style.opacity = (taskType==='当前体型')?1:0;
+    labelIdeal.style.opacity   = (taskType==='理想体型')?1:0;
+  }
+}
+function showFix(){ stimulus.style.display='none'; labelCurrent.style.opacity=0; labelIdeal.style.opacity=0;
+  hintL.style.display='none'; hintR.style.display='none'; practicePrompt.style.display='none'; fixation.style.display='block'; }
+function hideFix(){ fixation.style.display='none'; }
+function nextStartEdge(){ return (Math.random()<0.5)? 0 : (imgList.length-1); }
+
+/* ========= 数据 ========= */
+function saveRow(){
+  results.push({
+    task_type: taskType,
+    selected_image: imgList[idx] || '',
+    index: idx,
+    response_time: new Date().toISOString(),
+    response_duration_ms: Date.now() - t0,
+    student_id: (studentIdEl.value||'').trim(),
+    subject_number: (subjectNumberEl.value||'').trim(),
+    gender
+  });
+}
+function downloadCSV(){
+  const headers = ['Task Type','Selected Image','Index','Response Time','Response Duration (ms)','Student ID','Subject Number','Gender','Total Experiment Duration (ms)'];
+  const totalDuration = Date.now() - experimentStartTime;
+  const lines = [headers.join(',')];
+  for (const r of results){
+    lines.push([r.task_type,r.selected_image,r.index,r.response_time,r.response_duration_ms,r.student_id,r.subject_number,r.gender,totalDuration].map(x=>JSON.stringify(x??'')).join(','));
+  }
+  const blob = new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const t = new Date().toISOString().slice(0,19).replace(/:/g,'-');
+  const fn = `${(subjectNumberEl.value||'SN')}_${(studentIdEl.value||'SID')}_${gender||'X'}_${t}.csv`;
+  const a = document.createElement('a'); const url = URL.createObjectURL(blob);
+  a.href=url; a.download=fn; a.style.display='none'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+/* ========= 无延迟长按 ========= */
+function startHold(which){ stopHold(); const delta=(which==='f')?-1:+1; step(delta); holdKey=which; holdTimer=setInterval(()=>step(delta),HOLD_INTERVAL); }
+function stopHold(){ if (holdTimer){ clearInterval(holdTimer); holdTimer=null; } holdKey=null; }
+function step(delta){ if (!adjusting) return; idx = clamp(idx + delta, 0, imgList.length-1); updateStimulus(); }
+
+/* ========= 流程 ========= */
+function startPracticeBlock(){ taskType='练习'; practiceTrial=0; showScreen('pracG'); }
+function startCurrentBlock(){ taskType='当前体型'; currentTrial=0; showScreen('currG'); }
+function startIdealBlock(){ taskType='理想体型'; idealTrial=0; showScreen('idealG'); }
+function startTrial(){
+  adjusting = true;
+  document.body.classList.add('hide-cursor');
+  stimulus.style.display='block';
+  idx = (taskType==='练习') ? Math.floor(Math.random()*imgList.length) : nextStartEdge();
+  startIdx = idx; updateStimulus(); t0 = Date.now();
+}
+
+/* ========= 性别选择 → 自动预载 ========= */
+async function chooseGender(g){
+  gender = (g==='M') ? 'Male' : 'Female';
+  series = (g==='M') ? 'M' : 'F';
+  enterFullscreen();
+  preloadTip.textContent = `已选择：${gender==='Male'?'男性':'女性'}，开始预加载…`;
+  imgList = getSeriesURLs(series);
+  btnStartPractice.disabled = true;
+  await preloadAll(imgList);
+  preloaded = true;
+  preloadTip.textContent = '预加载完成。现在可以进入练习。';
+  btnStartPractice.disabled = false;
+}
+
+/* ========= 事件 ========= */
+maleBtn.addEventListener('click', ()=>chooseGender('M'));
+femaleBtn.addEventListener('click', ()=>chooseGender('F'));
+
+btnStartPractice.addEventListener('click', ()=>{
+  if (!preloaded){ alert('请先等待预加载完成'); return; }
+  if (!(studentIdEl.value && subjectNumberEl.value)){ alert('请先填写学号与被试序号'); return; }
+  experimentStartTime = Date.now();
+  startPracticeBlock();
+});
+
+window.addEventListener('keydown', (e)=>{
+  const k = e.key.toLowerCase();
+
+  if (!adjusting){
+    if (screens.pracG.classList.contains('active') && k===' '){
+      Object.values(screens).forEach(s=>s.classList.remove('active'));
+      startTrial(); return;
+    }
+    if (screens.currG.classList.contains('active') && k===' '){
+      Object.values(screens).forEach(s=>s.classList.remove('active'));
+      labelCurrent.style.opacity=1; labelIdeal.style.opacity=0; startTrial(); return;
+    }
+    if (screens.idealG.classList.contains('active') && k===' '){
+      Object.values(screens).forEach(s=>s.classList.remove('active'));
+      labelCurrent.style.opacity=0; labelIdeal.style.opacity=1; startTrial(); return;
+    }
+  }
+
+  if (adjusting){
+    if (k==='f' || k==='j'){ if (holdKey!==k) startHold(k); }
+    else if (k==='r'){ idx = startIdx; updateStimulus(); }
+    else if (k==='enter'){
+      if (enterLocked) return;
+      enterLocked = true;
+
+      saveRow(); showFix(); adjusting = false; stopHold();
+
+      setTimeout(()=>{
+        hideFix(); enterLocked = false;
+
+        if (taskType==='练习'){
+          practiceTrial++;
+          if (practiceTrial < PRACTICE_TRIALS) startTrial();
+          else startCurrentBlock();
+        } else if (taskType==='当前体型'){
+          currentTrial++;
+          if (currentTrial < CURRENT_TRIALS) startTrial();
+          else startIdealBlock();
+        } else if (taskType==='理想体型'){
+          idealTrial++;
+          if (idealTrial < IDEAL_TRIALS) startTrial();
+          else {
+            stimulus.style.display='none';
+            document.body.classList.remove('hide-cursor');
+            showScreen('thank'); downloadCSV();
+          }
+        }
+      }, FIX_MS);
+    }
+  }
+});
+
+window.addEventListener('keyup',(e)=>{
+  const k = e.key.toLowerCase();
+  if (k==='f' || k==='j') stopHold();
+  if (k==='enter') enterLocked = false;
+  if (k==='q' && screens.thank.classList.contains('active')) location.reload();
+});
+
+/* 初始提示 */
+preloadTip.textContent = '等待选择性别开始预加载…';
+</script>
+</body>
+</html>

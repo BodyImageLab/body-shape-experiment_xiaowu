@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>体型调整实验 · 自动预载（练习3 + 当前10 + 理想10 · 无长按延迟）</title>
+<title>体型调整实验 · 性能加强版（练习3 + 当前10 + 理想10）</title>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
   :root { --bg:#121212; --txt:#e0e0e0; --acc:#ffcc00; --muted:#b9c0c7; }
@@ -18,7 +18,7 @@
   input{margin:8px;padding:10px;font-size:18px;border:2px solid var(--acc);border-radius:8px;background:#1e1e1e;color:#fff}
   .screen{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:24px}
   .screen.active{display:flex}
-  #stimulus{max-width:80%;max-height:70vh;display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+  #stimulus{max-width:80%;height:60vh;display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
   #fixation{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:64px;color:var(--acc)}
   .hint{position:absolute;font-size:24px;color:var(--acc);font-weight:600;background:rgba(30,30,30,.85);border:2px solid var(--acc);border-radius:10px;padding:10px 14px}
   .hint-left{left:8%;top:50%;transform:translateY(-50%);display:none}
@@ -70,7 +70,7 @@
 </section>
 
 <!-- ========== 刺激/提示/注视点 ========== -->
-<img id="stimulus" alt="stimulus">
+<img id="stimulus" alt="stimulus" decoding="async" loading="eager" fetchpriority="high">
 <div id="fixation">+</div>
 <div class="hint hint-left">长按“F”快速变瘦</div>
 <div class="hint hint-right">长按“J”快速变胖</div>
@@ -104,13 +104,12 @@ const F_EXT = 'png', M_EXT = 'png';
 let F_LIST = [];   // 如需自定义: ['F001.jpg', ...]
 let M_LIST = [];   // 同上
 
-/* ========= 试次数 ========= */
+/* ========= 试次数 / 时序 / 频率 ========= */
 const PRACTICE_TRIALS = 3;
 const CURRENT_TRIALS  = 10;
 const IDEAL_TRIALS    = 10;
-
 const FIX_MS = 800;
-const HOLD_INTERVAL = 40;
+const HOLD_INTERVAL = 70;   // 从40拉到70，更稳
 
 /* ========= DOM ========= */
 const screens = {
@@ -169,18 +168,19 @@ function getSeriesURLs(which){
   }
 }
 
-/* ========= 预加载（只预载当前性别） ========= */
-function preloadAll(urls){
-  return new Promise(resolve=>{
-    if (!urls.length){ resolve(); return; }
-    let loaded=0, total=urls.length;
-    const upd=()=>{ preloadPg.style.width=((loaded/total)*100).toFixed(1)+'%'; };
-    urls.forEach(u=>{
-      const im=new Image();
-      im.onload=im.onerror=()=>{ loaded++; upd(); if (loaded===total) resolve(); };
-      im.src=u;
-    });
-  });
+/* ========= 真·预加载：下载 + 等待解码 ========= */
+async function preloadAll(urls){
+  if (!urls.length) return;
+  let done = 0, total = urls.length;
+  const upd = ()=>{ preloadPg.style.width = ((done/total)*100).toFixed(1) + '%'; };
+  for (const u of urls) {
+    const im = new Image();
+    im.loading = 'eager';
+    im.decoding = 'async';
+    im.src = u;
+    try { await im.decode(); } catch(e) { /* 忽略个别失败 */ }
+    done++; upd();
+  }
 }
 
 /* ========= 呈现/索引 ========= */
@@ -226,7 +226,7 @@ function downloadCSV(){
   }
   const blob = new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8;'});
   const t = new Date().toISOString().slice(0,19).replace(/:/g,'-');
-  const fn = `${(subjectNumberEl.value||'SN')}_${(studentIdEl.value||'SID')}_${gender||'X'}_${t}.csv`;
+  const fn = `${(studentIdEl.value||'SN')}_${(subjectNumberEl.value||'SID')}_${gender||'X'}_${t}.csv`;
   const a = document.createElement('a'); const url = URL.createObjectURL(blob);
   a.href=url; a.download=fn; a.style.display='none'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
@@ -252,11 +252,11 @@ function startTrial(){
 async function chooseGender(g){
   gender = (g==='M') ? 'Male' : 'Female';
   series = (g==='M') ? 'M' : 'F';
-  enterFullscreen();
+  if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
   preloadTip.textContent = `已选择：${gender==='Male'?'男性':'女性'}，开始预加载…`;
   imgList = getSeriesURLs(series);
   btnStartPractice.disabled = true;
-  await preloadAll(imgList);
+  await preloadAll(imgList);  // 真·预加载：下载+解码
   preloaded = true;
   preloadTip.textContent = '预加载完成。现在可以进入练习。';
   btnStartPractice.disabled = false;

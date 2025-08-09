@@ -94,11 +94,11 @@
 </div>
 
 <script>
-/* ====== CloudBase HTTP 入口（你刚配置的域名+路径） ====== */
+/* ====== 你的 CloudBase HTTP 入口（域名 + 路径） ====== */
 const TCB_HTTP_ENDPOINT =
   'https://bodyshape2025-8gk5msghc2121838-1373390636.ap-shanghai.app.tcloudbase.com/upload';
 
-/* ===== 图片资源路径 ===== */
+/* ===== 图片资源路径（GitHub Pages 上自动用线上；本地用相对路径） ===== */
 const IS_PROD   = location.hostname.endsWith('github.io');
 const SITE_BASE = IS_PROD ? 'https://BodyImageLab.github.io/body-shape-experiment_xiaowu/' : './';
 const BASE_URL_F = SITE_BASE + 'img_F/';
@@ -273,8 +273,12 @@ async function uploadAllResults(){
     body: JSON.stringify(payload)
   });
 
+  // 打印原始返回，方便排错
+  const raw = await res.text();
   let data = {};
-  try { data = await res.json(); } catch(_) {}
+  try { data = JSON.parse(raw); } catch(_) {}
+  console.log('upload response:', raw);
+
   if (!res.ok || !data.ok) {
     throw new Error('Server error: ' + (data.error || res.status));
   }

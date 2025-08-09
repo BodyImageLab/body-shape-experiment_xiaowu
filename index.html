@@ -110,8 +110,8 @@ const IDEAL_TRIALS    = 10;
 const FIX_MS = 800;
 const HOLD_INTERVAL = 70;
 
-/* ===== 云端上传配置（你的） ===== */
-const ENDPOINT = 'https://script.google.com/macros/s/AKfycbz88qazga9MC_6jjo8gHd3BiQG-LD172aqDe1nlYy5K2iXotSTn7YikBqm3aeaDHE1C/exec';
+/* ===== 云端上传配置 ===== */
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxa0WWiuZ1QHHEaCjL8lVe0XDM_XEG7nB71BaLm7dToWTfAVhhPeNrqhZ5TlYA_ILDYJQ/exec';
 const ENDPOINT_TOKEN = 'BodyShape2025_G3Aq19X!#';
 const ENABLE_LOCAL_CSV = false; // 被试端不下载
 
@@ -187,7 +187,6 @@ function bmiFromIndex(series, index){
 function updateStimulus(){
   if (!imgList.length) return;
   idx = clamp(idx, 0, imgList.length-1);
-  // 不在这里立刻切换 src；仅用于试次刚开始的首帧
   stimulus.src = imgList[idx];
   stimulus.style.display = 'block';
   if (taskType === '练习'){
@@ -251,7 +250,7 @@ function startTrial(){
   startIdx = idx; updateStimulus(); t0 = Date.now();
 }
 
-/* ===== 覆盖层控制 & 上传 ===== */
+/* ===== 覆盖层控制 ===== */
 function showUploadingOverlay(){ document.getElementById('overlayUploading').style.display='flex'; }
 function hideUploadingOverlay(){ document.getElementById('overlayUploading').style.display='none'; }
 function showUploadFailedOverlay(msg){
@@ -273,52 +272,54 @@ function buildPayload(){
   };
 }
 
-/* ===== 上传（先标准 JSON，失败则 no-cors 兜底） ===== */
+/* ===== 稳健上传（text/plain → no-cors → sendBeacon） ===== */
 async function uploadAllResults(){
   const payload = buildPayload();
+  const bodyStr = JSON.stringify(payload);
+  const ENDPOINT_WITH_TS = ENDPOINT + '?t=' + Date.now(); // 防缓存
+
   const unloadGuard = (e)=>{ e.preventDefault(); e.returnValue=''; };
   window.addEventListener('beforeunload', unloadGuard);
 
-  let lastErr = null;
-
-  // 尝试1：标准 JSON（可拿回执）
+  // ① 避免预检（多数环境可拿回执）
   try {
-    const res = await fetch(ENDPOINT, {
+    const res = await fetch(ENDPOINT_WITH_TS, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      headers: { 'Content-Type': 'text/plain' }, // 关键：不触发预检
+      body: bodyStr,
+      keepalive: true
     });
-    try {
-      const data = await res.json();
-      if (res.ok && data && data.ok) {
-        window.removeEventListener('beforeunload', unloadGuard);
-        return; // 成功
-      }
-    } catch(_) {}
-    if (res.ok) {
+    let data = null;
+    try { data = await res.json(); } catch(_) {}
+    if (res.ok && data && data.ok) {
       window.removeEventListener('beforeunload', unloadGuard);
       return;
     }
-    lastErr = new Error('HTTP '+res.status);
-  } catch (e) {
-    lastErr = e;
-  }
+  } catch (_) {}
 
-  // 兜底：避免预检/跨域阻断（发得出去但拿不到回执）
+  // ② no-cors 兜底（发得出去，但拿不到回执）
   try {
-    await fetch(ENDPOINT, {
+    await fetch(ENDPOINT_WITH_TS, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload),
+      body: bodyStr,
       keepalive: true
     });
     window.removeEventListener('beforeunload', unloadGuard);
     return;
-  } catch (e2) {
+  } catch (_) {}
+
+  // ③ sendBeacon 终极兜底（页面关闭也能发）
+  try {
+    const blob = new Blob([bodyStr], { type: 'text/plain' });
+    const ok = navigator.sendBeacon ? navigator.sendBeacon(ENDPOINT_WITH_TS, blob) : false;
     window.removeEventListener('beforeunload', unloadGuard);
-    throw lastErr || e2;
-  }
+    if (ok) return;
+  } catch (_) {}
+
+  window.removeEventListener('beforeunload', unloadGuard);
+  throw new Error('upload failed');
 }
 
 /* ===== 性别选择 → 自动预载 ===== */

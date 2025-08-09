@@ -3,8 +3,25 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>体型调整实验 · 最终版（整场一次上传 + BMI + 防闪屏）</title>
+<title>体型调整实验 · CloudBase 版（整场一次上传 + BMI + 防闪屏）</title>
+
+<!-- 字体 -->
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<!-- CloudBase SDK：先尝试官方 CDN，失败自动降级到 jsDelivr -->
+<script src="https://imgcache.qq.com/qcloud/cloudbase-js-sdk/2.10.0/cloudbase.full.js"
+        onerror="(function(){var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@cloudbase/js-sdk@2.10.0/dist/cloudbase.full.min.js';document.head.appendChild(s);})();">
+</script>
+<script>
+  // 加个提示：两条 CDN 都没成功的话给出警告
+  window.addEventListener('load', function(){
+    if (!window.cloudbase) {
+      console.error('CloudBase SDK 未加载成功，请检查网络或更换打开方式（建议用本地HTTP服务或GitHub Pages）。');
+      alert('CloudBase SDK 未加载成功：请确认联网、关闭拦截插件，或用本地HTTP服务/Pages打开页面。');
+    }
+  });
+</script>
+
 <style>
   :root { --bg:#121212; --txt:#e0e0e0; --acc:#ffcc00; --muted:#b9c0c7; }
   *{box-sizing:border-box}
@@ -32,7 +49,7 @@
 </head>
 <body>
 
-<!-- 指导语 -->
+<!-- 指导语（首页） -->
 <section id="guidelines" class="screen active">
   <h1>欢迎参加本实验</h1>
   <p>用 <b>F</b>/<b>J</b> 调整体型（长按快速、点按精细），按 <b>Enter</b> 确认保存。</p>
@@ -92,7 +109,28 @@
 </div>
 
 <script>
-/* ===== 环境与资源 ===== */
+/* ===== CloudBase 等待式初始化（已填你的环境ID） ===== */
+let tcbApp = null;
+function tcbDB(){ return tcbApp.database(); }
+
+async function tcbBoot(){
+  // 等 SDK 最多 3s
+  const start = Date.now();
+  while (!window.cloudbase && Date.now() - start < 3000){
+    await new Promise(r=>setTimeout(r,100));
+  }
+  if (!window.cloudbase) throw new Error('CloudBase SDK 未就绪');
+
+  // 初始化 + 匿名登录（持久化）
+  const TCB_ENV_ID = 'bodyshape2025-8gk5msghc2121838';
+  tcbApp = cloudbase.init({ env: TCB_ENV_ID });
+  const auth = tcbApp.auth({ persistence: "local" });
+  if (!auth.hasLoginState()) {
+    await auth.anonymousAuthProvider().signIn();
+  }
+}
+
+/* ===== 图片资源路径 ===== */
 const IS_PROD   = location.hostname.endsWith('github.io');
 const SITE_BASE = IS_PROD ? 'https://BodyImageLab.github.io/body-shape-experiment_xiaowu/' : './';
 const BASE_URL_F = SITE_BASE + 'img_F/';
@@ -109,11 +147,6 @@ const CURRENT_TRIALS  = 10;
 const IDEAL_TRIALS    = 10;
 const FIX_MS = 800;
 const HOLD_INTERVAL = 70;
-
-/* ===== 云端上传配置 ===== */
-const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxa0WWiuZ1QHHEaCjL8lVe0XDM_XEG7nB71BaLm7dToWTfAVhhPeNrqhZ5TlYA_ILDYJQ/exec';
-const ENDPOINT_TOKEN = 'BodyShape2025_G3Aq19X!#';
-const ENABLE_LOCAL_CSV = false; // 被试端不下载
 
 /* ===== DOM/状态 ===== */
 const screens = {
@@ -147,7 +180,8 @@ let idx = 0, holdTimer = null, holdKey = null, adjusting = false, preloaded = fa
 let practiceTrial = 0, currentTrial = 0, idealTrial = 0;
 let t0 = 0, startIdx = 0, enterLocked = false, experimentStartTime = 0;
 let taskType = '练习';
-let results = []; // 整场数据，最终作为 rows_json 上传
+let results = []; // 整场数据
+let sessionId = null; // 场次唯一ID
 
 /* ===== 防闪屏补丁：下一帧统一换图 ===== */
 let pendingIndex = null;
@@ -174,11 +208,11 @@ async function preloadAll(urls){
   }
 }
 
-/* ===== BMI 计算（与你给的映射一致）===== */
+/* ===== BMI 映射 ===== */
 function bmiFromIndex(series, index){
-  if (series === 'F'){ // F1 = 10.8, F76 = 43.2 → 每步 0.432
+  if (series === 'F'){ // F1 = 10.8, F76 = 43.2 → 步长 0.432
     return +(10.8 + index * 0.432).toFixed(2);
-  } else {             // M1 = 11.8, M76 = 47.2 → 每步 0.472
+  } else {             // M1 = 11.8, M76 = 47.2 → 步长 0.472
     return +(11.8 + index * 0.472).toFixed(2);
   }
 }
@@ -208,7 +242,7 @@ function saveRow(){
     series,                              // F / M
     selected_image: imgList[idx] || '',
     index: idx,
-    bmi: bmiFromIndex(series, idx),      // BMI
+    bmi: bmiFromIndex(series, idx),
     start_index: startIdx,
     response_time: new Date().toISOString(),
     response_duration_ms: Date.now() - t0,
@@ -228,7 +262,7 @@ function step(delta){
   pendingIndex = idx; // 等下一帧统一切图
 }
 
-/* ===== 渲染循环：一帧最多切一次图，降低闪屏 ===== */
+/* ===== 渲染循环：一帧最多切一次图 ===== */
 function renderLoop(){
   if (pendingIndex !== null){
     stimulus.src = imgList[pendingIndex];
@@ -262,9 +296,10 @@ function showUploadFailedOverlay(msg){
   };
 }
 
+/* ===== 构造整场 payload ===== */
 function buildPayload(){
   return {
-    token: ENDPOINT_TOKEN,
+    sessionId,
     pid: (studentIdEl.value||'').trim(),
     subjectNumber: (subjectNumberEl.value||'').trim(),
     gender,
@@ -272,54 +307,52 @@ function buildPayload(){
   };
 }
 
-/* ===== 稳健上传（text/plain → no-cors → sendBeacon） ===== */
+/* ===== CloudBase 上传（去重 + 均值 + 分批写） ===== */
+const mean = arr => arr.length ? +(arr.reduce((x,y)=>x+y,0)/arr.length).toFixed(3) : null;
+
 async function uploadAllResults(){
+  // 确保 SDK 就绪 + 已匿名登录
+  await tcbBoot();
+  const db = tcbDB();
+
   const payload = buildPayload();
-  const bodyStr = JSON.stringify(payload);
-  const ENDPOINT_WITH_TS = ENDPOINT + '?t=' + Date.now(); // 防缓存
+  const { sessionId, pid, subjectNumber, gender, rows } = payload;
 
-  const unloadGuard = (e)=>{ e.preventDefault(); e.returnValue=''; };
-  window.addEventListener('beforeunload', unloadGuard);
+  // 去重：同一 sessionId 不重复写
+  const exist = await db.collection('logs').where({ session_id: sessionId }).get();
+  if (exist.data.length) return;
 
-  // ① 避免预检（多数环境可拿回执）
-  try {
-    const res = await fetch(ENDPOINT_WITH_TS, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' }, // 关键：不触发预检
-      body: bodyStr,
-      keepalive: true
-    });
-    let data = null;
-    try { data = await res.json(); } catch(_) {}
-    if (res.ok && data && data.ok) {
-      window.removeEventListener('beforeunload', unloadGuard);
-      return;
-    }
-  } catch (_) {}
+  const nowISO = new Date().toISOString();
+  const curBMIs   = rows.filter(r=>r.task_type==='当前体型').map(r=>r.bmi);
+  const idealBMIs = rows.filter(r=>r.task_type==='理想体型').map(r=>r.bmi);
 
-  // ② no-cors 兜底（发得出去，但拿不到回执）
-  try {
-    await fetch(ENDPOINT_WITH_TS, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: bodyStr,
-      keepalive: true
-    });
-    window.removeEventListener('beforeunload', unloadGuard);
-    return;
-  } catch (_) {}
+  // 1) logs（整场一条）
+  await db.collection('logs').add({
+    ts: nowISO,
+    session_id: sessionId,
+    pid, subjectNumber, gender,
+    rows_json: rows,
+    mean_bmi_current: mean(curBMIs),
+    mean_bmi_ideal:  mean(idealBMIs)
+  });
 
-  // ③ sendBeacon 终极兜底（页面关闭也能发）
-  try {
-    const blob = new Blob([bodyStr], { type: 'text/plain' });
-    const ok = navigator.sendBeacon ? navigator.sendBeacon(ENDPOINT_WITH_TS, blob) : false;
-    window.removeEventListener('beforeunload', unloadGuard);
-    if (ok) return;
-  } catch (_) {}
-
-  window.removeEventListener('beforeunload', unloadGuard);
-  throw new Error('upload failed');
+  // 2) trials（逐试次，分批写）
+  const batch = 50;
+  for (let i=0; i<rows.length; i+=batch){
+    const chunk = rows.slice(i, i+batch).map(r => ({
+      session_id: sessionId,
+      session_ts: nowISO,
+      pid, subjectNumber, gender,
+      block: r.task_type,
+      series: r.series,
+      image_name: (r.selected_image||'').split('/').pop(),
+      index0: r.index,
+      bmi: r.bmi,
+      rt_ms: r.response_duration_ms,
+      trial_end_iso: r.response_time
+    }));
+    await db.collection('trials').add(chunk);
+  }
 }
 
 /* ===== 性别选择 → 自动预载 ===== */
@@ -343,6 +376,11 @@ femaleBtn.addEventListener('click', ()=>chooseGender('F'));
 btnStartPractice.addEventListener('click', ()=>{
   if (!preloaded){ alert('请先等待预加载完成'); return; }
   if (!(studentIdEl.value && subjectNumberEl.value)){ alert('请先填写学号与被试序号'); return; }
+  // 生成本场 sessionId：YYYYMMDDhhmmss_pid_sn
+  const d=new Date(), p=n=>(n<10?'0':'')+n;
+  const ts = d.getFullYear()+''+p(d.getMonth()+1)+p(d.getDate())+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds());
+  sessionId = `${ts}_${(studentIdEl.value||'').trim()}_${(subjectNumberEl.value||'').trim()}`;
+
   experimentStartTime = Date.now();
   startPracticeBlock();
 });
@@ -364,7 +402,7 @@ window.addEventListener('keydown', (e)=>{
 
   if (adjusting){
     if (k==='f' || k==='j'){ if (holdKey!==k) startHold(k); }
-    else if (k==='r'){ idx = startIdx; pendingIndex = idx; } // 重置到起点，等下一帧切
+    else if (k==='r'){ idx = startIdx; pendingIndex = idx; } // 重置到起点
     else if (k==='enter'){
       if (enterLocked) return; enterLocked = true;
 

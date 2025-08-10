@@ -13,8 +13,20 @@
   html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:'Roboto',ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif;overflow:hidden}
   body{display:flex;align-items:center;justify-content:center;padding:36px}
   .hide-cursor{cursor:none}
-  h1,p{margin:10px 0;text-shadow:1px 1px 2px rgba(0,0,0,.7)}
-  .btn{background:var(--acc);color:#000;border:0;border-radius:8px;padding:12px 22px;font-size:18px;cursor:pointer;margin:8px;font-weight:600}
+
+  /* ===== 指导语字体大小（首页、练习、正式指导语） ===== */
+  h1 {
+    margin:10px 0;
+    text-shadow:1px 1px 2px rgba(0,0,0,.7);
+    font-size: 36px; /* 标题字体大小 */
+  }
+  p {
+    margin:10px 0;
+    text-shadow:1px 1px 2px rgba(0,0,0,.7);
+    font-size: 28px; /* 正文字体大小 */
+  }
+
+  .btn{background:var(--acc);color:#000;border:0;border-radius:8px;padding:12px 70px;font-size:22px;cursor:pointer;margin:8px;font-weight:600}
   .btn[disabled]{opacity:.6;cursor:not-allowed}
   .btn:hover{filter:brightness(1.05)}
   input{margin:8px;padding:10px;font-size:18px;border:2px solid var(--acc);border-radius:8px;background:#1e1e1e;color:#fff}
@@ -36,13 +48,15 @@
 
 <!-- 指导语（首页） -->
 <section id="guidelines" class="screen active">
-  <h1>欢迎参加本实验</h1>
-  <p>用 <b>F</b>/<b>J</b> 调整体型（长按快速、点按精细），按 <b>Enter</b> 确认保存。</p>
+  <h1>欢迎您参加本实验！</h1>
+   <p>实验中，您将通过"F"键与"J"键来对呈现的体型胖瘦进行调整，直到符合相应体型。</p>
+        <p>您可以通过长按或点击"F"键与"J"键来进行快速或精细的调整，</p>
+        <p>调整完成后，按“回车键（Enter）”确认选择。</p>
+  <p style="margin-top:6px">请选择您的性别</p>
   <div>
     <input id="studentId" placeholder="请输入学号" />
-    <input id="subjectNumber" placeholder="请输入被试序号" />
+    <input id="subjectNumber" placeholder="请输手机号码后4位" />
   </div>
-  <p style="margin-top:6px">请选择您的性别（选择后将自动预加载）：</p>
   <div>
     <button id="maleButton" class="btn">男性</button>
     <button id="femaleButton" class="btn">女性</button>
@@ -50,22 +64,29 @@
   <div class="bar" style="margin-top:10px"><span id="preloadPg"></span></div>
   <p id="preloadTip" class="muted">等待选择性别开始预加载…</p>
   <button id="btnStartPractice" class="btn" disabled>进入练习</button>
+  <p id="preloadTip" class="muted">请您耐心等待实验加载，若长时间未加载完成，可点击性别进行刷新或重新进入实验！</p>
+  <p id="preloadTip" class="muted">注！！！请您一定准确填写您的学号，与手机号后4位，这将作为您的实验编码，以便于为您发放后续实验报酬，感谢您的配合！</p>
 </section>
 
 <!-- 练习/正式指导语 -->
 <section id="practiceGuidelines" class="screen">
-  <p>练习阶段：长按 “F/J” 快速调整，点按“F/J”精细调整。</p>
-  <p>按 <b>空格键</b> 开始练习（共 3 次）。</p>
+  <p>练习阶段（共 3 次）！</p>
+        <p>您可以通过‘长按’ “F” 与 “J” 键，来进行体型的 ‘快速’ 调整，</p>
+        <p>或通过‘点击’ “F” 与 “J” 键来对体型进行‘精细’ 调整。</p>
+  <p>若您已经了解具体操作，按 <b>空格键</b> 开始练习！</p>
 </section>
 
 <section id="currentGuidelines" class="screen">
-  <p>正式实验：<b>当前体型</b> 调整（10 次）</p>
-  <p>调整至<b>最接近您当前</b>的体型，按 <b>Enter</b> 保存；按 <b>空格键</b> 开始。</p>
+   <p>正式实验开始！</p>
+        <p>“当前体型”调整任务（共10 次）！</p>
+        <p>现在，您将通过"F"键与"J"键来调整出最接近您当前的体型。</p>
+        <p>按“回车键（Enter）”确认保存调整结果，按“空格键”正式开始实验。</p>
 </section>
 
 <section id="idealGuidelines" class="screen">
-  <p>正式实验：<b>理想体型</b> 调整（10 次）</p>
-  <p>调整至<b>您的理想体型</b>，按 <b>Enter</b> 保存；按 <b>空格键</b> 开始。</p>
+   <p>“理想体型”调整任务（共10 次）！</p>
+        <p>现在，您将通过"F"键与"J"键来调整您的理想体型。</p>
+        <p>按“回车键（Enter）”确认保存调整结果，按“空格键”开始实验。</p>
 </section>
 
 <!-- 刺激层 -->
@@ -80,7 +101,7 @@
 <!-- 结束页与遮罩 -->
 <section id="thankYou" class="screen">
   <h1>实验结束，感谢参与！</h1>
-  <p>可关闭页面。</p>
+  <p>按下“ESC”后，关闭关闭当前页面即可。</p>
 </section>
 
 <div id="overlayUploading" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);color:#fff;z-index:9999;align-items:center;justify-content:center;flex-direction:column;">
@@ -102,7 +123,7 @@ const STS_URL    = 'https://bodyshape2025-8gk5msghc2121838-1373390636.ap-shangha
 const COS_BUCKET = 'bodyshape-data-1373390636';
 const COS_REGION = 'ap-shanghai';
 
-/* ===== 图片资源路径（GitHub Pages 上自动用线上；本地用相对路径） ===== */
+/* ===== 图片资源路径 ===== */
 const IS_PROD   = location.hostname.endsWith('github.io');
 const SITE_BASE = IS_PROD ? 'https://BodyImageLab.github.io/body-shape-experiment_xiaowu/' : './';
 const BASE_URL_F = SITE_BASE + 'img_F/';
@@ -110,8 +131,7 @@ const BASE_URL_M = SITE_BASE + 'img_M/';
 
 const MAX_F = 76, MAX_M = 76;
 const F_EXT = 'png', M_EXT = 'png';
-let F_LIST = []; // 留空即 F1..F76
-let M_LIST = []; // 留空即 M1..M76
+let F_LIST = [], M_LIST = [];
 
 // 试次数/时序/频率
 const PRACTICE_TRIALS = 3;
@@ -145,17 +165,14 @@ const practicePrompt = document.getElementById('practicePrompt');
 const studentIdEl = document.getElementById('studentId');
 const subjectNumberEl = document.getElementById('subjectNumber');
 
-let gender = null;          // 'Female' | 'Male'
-let series = 'F';           // 'F' | 'M'
-let imgList = [];
+let gender = null, series = 'F', imgList = [];
 let idx = 0, holdTimer = null, holdKey = null, adjusting = false, preloaded = false;
 let practiceTrial = 0, currentTrial = 0, idealTrial = 0;
+let currentStarts = [], idealStarts = [];
 let t0 = 0, startIdx = 0, enterLocked = false, experimentStartTime = 0;
 let taskType = '练习';
-let results = []; // 整场数据
-let sessionId = null; // 场次唯一ID
-
-/* ===== 防闪屏补丁：下一帧统一换图 ===== */
+let results = [];
+let sessionId = null;
 let pendingIndex = null;
 
 /* ===== 工具函数 ===== */
@@ -168,7 +185,7 @@ function getSeriesURLs(which){
   else { const names = F_LIST.length ? F_LIST : genNames('F', MAX_F, F_EXT); return names.map(n => BASE_URL_F + n); }
 }
 
-/* ===== 真·预加载：下载+解码 ===== */
+/* ===== 真·预加载 ===== */
 async function preloadAll(urls){
   if (!urls.length) return;
   let done = 0, total = urls.length;
@@ -182,36 +199,34 @@ async function preloadAll(urls){
 
 /* ===== BMI 映射 ===== */
 function bmiFromIndex(series, index){
-  if (series === 'F'){ // F1 = 10.8, F76 = 43.2 → 步长 0.432
-    return +(10.8 + index * 0.432).toFixed(2);
-  } else {             // M1 = 11.8, M76 = 47.2 → 步长 0.472
-    return +(11.8 + index * 0.472).toFixed(2);
-  }
+  if (series === 'F'){ return +(10.8 + index * 0.432).toFixed(2); }
+  else { return +(11.8 + index * 0.472).toFixed(2); }
 }
 
 /* ===== 呈现/索引 ===== */
 function updateStimulus(){
-  if (!imgList.length) return;
   idx = clamp(idx, 0, imgList.length-1);
   stimulus.src = imgList[idx];
   stimulus.style.display = 'block';
   if (taskType === '练习'){
-    hintL.style.display='block'; hintR.style.display='block'; practicePrompt.style.display=(practiceTrial < PRACTICE_TRIALS)?'block':'none';
+    hintL.style.display='block'; hintR.style.display='block';
+    practicePrompt.style.display=(practiceTrial < PRACTICE_TRIALS)?'block':'none';
     labelCurrent.style.opacity=0; labelIdeal.style.opacity=0;
   } else {
-    hintL.style.display='none'; hintR.style.display='none'; practicePrompt.style.display='none';
-    labelCurrent.style.opacity=(taskType==='当前体型')?1:0; labelIdeal.style.opacity=(taskType==='理想体型')?1:0;
+    hintL.style.display='none'; hintR.style.display='none';
+    practicePrompt.style.display='none';
+    labelCurrent.style.opacity=(taskType==='当前体型')?1:0;
+    labelIdeal.style.opacity=(taskType==='理想体型')?1:0;
   }
 }
 function showFix(){ stimulus.style.display='none'; labelCurrent.style.opacity=0; labelIdeal.style.opacity=0; hintL.style.display='none'; hintR.style.display='none'; practicePrompt.style.display='none'; fixation.style.display='block'; }
 function hideFix(){ fixation.style.display='none'; }
-function nextStartEdge(){ return (Math.random()<0.5)? 0 : (imgList.length-1); }
 
 /* ===== 记录一条试次 ===== */
 function saveRow(){
-  const row = {
-    task_type: taskType,                 // 练习 / 当前体型 / 理想体型
-    series,                              // F / M
+  results.push({
+    task_type: taskType,
+    series,
     selected_image: imgList[idx] || '',
     index: idx,
     bmi: bmiFromIndex(series, idx),
@@ -221,27 +236,16 @@ function saveRow(){
     student_id: (studentIdEl.value||'').trim(),
     subject_number: (subjectNumberEl.value||'').trim(),
     gender
-  };
-  results.push(row);
+  });
 }
 
-/* ===== 长按快速步进（不立刻换图，交给渲染循环） ===== */
+/* ===== 长按快速步进 ===== */
 function startHold(which){ stopHold(); const delta=(which==='f')?-1:+1; step(delta); holdKey=which; holdTimer=setInterval(()=>step(delta),HOLD_INTERVAL); }
 function stopHold(){ if (holdTimer){ clearInterval(holdTimer); holdTimer=null; } holdKey=null; }
-function step(delta){
-  if (!adjusting) return;
-  idx = clamp(idx + delta, 0, imgList.length-1);
-  pendingIndex = idx; // 等下一帧统一切图
-}
+function step(delta){ if (!adjusting) return; idx = clamp(idx + delta, 0, imgList.length-1); pendingIndex = idx; }
 
-/* ===== 渲染循环：一帧最多切一次图 ===== */
-function renderLoop(){
-  if (pendingIndex !== null){
-    stimulus.src = imgList[pendingIndex];
-    pendingIndex = null;
-  }
-  requestAnimationFrame(renderLoop);
-}
+/* ===== 渲染循环 ===== */
+function renderLoop(){ if (pendingIndex !== null){ stimulus.src = imgList[pendingIndex]; pendingIndex = null; } requestAnimationFrame(renderLoop); }
 renderLoop();
 
 /* ===== 覆盖层控制 ===== */
@@ -258,65 +262,61 @@ function showUploadFailedOverlay(msg){
 
 /* ===== 整场 payload ===== */
 function buildPayload(){
-  return {
-    sessionId,
-    pid: (studentIdEl.value||'').trim(),
-    subjectNumber: (subjectNumberEl.value||'').trim(),
-    gender,
-    rows: results
-  };
+  return { sessionId, pid: (studentIdEl.value||'').trim(), subjectNumber: (subjectNumberEl.value||'').trim(), gender, rows: results };
 }
 
-/* ====== 新的：使用 STS + COS 直传 ====== */
+/* ===== 上传 ===== */
 async function uploadAllResults(){
   const payload = buildPayload();
-
-  // 1) 获取临时密钥
   const sts = await fetch(STS_URL).then(r=>r.json());
   if (!sts.ok) throw new Error(sts.error || 'Get STS failed');
-
-  // 2) 初始化 COS
-  const cos = new COS({
-    getAuthorization: (options, cb) => cb({
+  const cos = new COS({ getAuthorization: (options, cb) => cb({
       TmpSecretId:  sts.credentials.TmpSecretId,
       TmpSecretKey: sts.credentials.TmpSecretKey,
       SecurityToken: sts.credentials.Token,
       StartTime: Math.floor(Date.now()/1000) - 1,
       ExpiredTime: Math.floor(Date.now()/1000) + 600
-    })
-  });
-
-  // 3) 对象名（可按需调整目录结构）
-  const dateDir = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+    }) });
+  const dateDir = new Date().toISOString().slice(0,10);
   const key = `sessions/${dateDir}/${payload.sessionId}.json`;
-
-  // 4) 上传
   await new Promise((resolve,reject)=>{
-    cos.putObject({
-      Bucket: COS_BUCKET,
-      Region: COS_REGION,
-      Key: key,
+    cos.putObject({ Bucket: COS_BUCKET, Region: COS_REGION, Key: key,
       Body: new Blob([JSON.stringify(payload)], { type:'application/json' })
     }, (err,data)=>err?reject(err):resolve(data));
   });
-
   console.log('Uploaded to COS:', key);
   return key;
 }
 
 /* ===== 流程控制 ===== */
 function startPracticeBlock(){ taskType='练习'; practiceTrial=0; showScreen('pracG'); }
-function startCurrentBlock(){ taskType='当前体型'; currentTrial=0; showScreen('currG'); }
-function startIdealBlock(){ taskType='理想体型'; idealTrial=0; showScreen('idealG'); }
+function startCurrentBlock(){
+  taskType='当前体型'; currentTrial=0;
+  currentStarts = Array(5).fill(0).concat(Array(5).fill(imgList.length-1)).sort(()=>Math.random()-0.5);
+  showScreen('currG');
+}
+function startIdealBlock(){
+  taskType='理想体型'; idealTrial=0;
+  idealStarts = Array(5).fill(0).concat(Array(5).fill(imgList.length-1)).sort(()=>Math.random()-0.5);
+  showScreen('idealG');
+}
 function startTrial(){
   adjusting = true;
   document.body.classList.add('hide-cursor');
   stimulus.style.display='block';
-  idx = (taskType==='练习') ? Math.floor(Math.random()*imgList.length) : nextStartEdge();
-  startIdx = idx; updateStimulus(); t0 = Date.now();
+  if (taskType==='练习'){
+    idx = Math.floor(Math.random()*imgList.length);
+  } else if (taskType==='当前体型'){
+    idx = currentStarts[currentTrial];
+  } else if (taskType==='理想体型'){
+    idx = idealStarts[idealTrial];
+  }
+  startIdx = idx;
+  updateStimulus();
+  t0 = Date.now();
 }
 
-/* ===== 性别选择 → 自动预载 ===== */
+/* ===== 性别选择 ===== */
 async function chooseGender(g){
   gender = (g==='M') ? 'Male' : 'Female';
   series = (g==='M') ? 'M' : 'F';
@@ -337,41 +337,28 @@ femaleBtn.addEventListener('click', ()=>chooseGender('F'));
 btnStartPractice.addEventListener('click', ()=>{
   if (!preloaded){ alert('请先等待预加载完成'); return; }
   if (!(studentIdEl.value && subjectNumberEl.value)){ alert('请先填写学号与被试序号'); return; }
-  // 生成本场 sessionId：YYYYMMDDhhmmss_pid_sn
   const d=new Date(), p=n=>(n<10?'0':'')+n;
   const ts = d.getFullYear()+''+p(d.getMonth()+1)+p(d.getDate())+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds());
   sessionId = `${ts}_${(studentIdEl.value||'').trim()}_${(subjectNumberEl.value||'').trim()}`;
-
   experimentStartTime = Date.now();
   startPracticeBlock();
 });
 
 window.addEventListener('keydown',(e)=>{
   const k = e.key.toLowerCase();
-
   if (!adjusting){
-    if (screens.pracG.classList.contains('active') && k===' '){
-      Object.values(screens).forEach(s=>s.classList.remove('active')); startTrial(); return;
-    }
-    if (screens.currG.classList.contains('active') && k===' '){
-      Object.values(screens).forEach(s=>s.classList.remove('active')); labelCurrent.style.opacity=1; labelIdeal.style.opacity=0; startTrial(); return;
-    }
-    if (screens.idealG.classList.contains('active') && k===' '){
-      Object.values(screens).forEach(s=>s.classList.remove('active')); labelCurrent.style.opacity=0; labelIdeal.style.opacity=1; startTrial(); return;
-    }
+    if (screens.pracG.classList.contains('active') && k===' '){ Object.values(screens).forEach(s=>s.classList.remove('active')); startTrial(); return; }
+    if (screens.currG.classList.contains('active') && k===' '){ Object.values(screens).forEach(s=>s.classList.remove('active')); labelCurrent.style.opacity=1; startTrial(); return; }
+    if (screens.idealG.classList.contains('active') && k===' '){ Object.values(screens).forEach(s=>s.classList.remove('active')); labelIdeal.style.opacity=1; startTrial(); return; }
   }
-
   if (adjusting){
     if (k==='f' || k==='j'){ if (holdKey!==k) startHold(k); }
-    else if (k==='r'){ idx = startIdx; pendingIndex = idx; } // 重置到起点
+    else if (k==='r'){ idx = startIdx; pendingIndex = idx; }
     else if (k==='enter'){
       if (enterLocked) return; enterLocked = true;
-
       saveRow(); showFix(); adjusting = false; stopHold();
-
       setTimeout(async ()=>{
         hideFix(); enterLocked = false;
-
         if (taskType==='练习'){
           practiceTrial++;
           if (practiceTrial < PRACTICE_TRIALS) startTrial();
@@ -384,33 +371,19 @@ window.addEventListener('keydown',(e)=>{
           idealTrial++;
           if (idealTrial < IDEAL_TRIALS) startTrial();
           else {
-            // —— 完成最后一个“理想体型”试次：整场上传 —— //
             stimulus.style.display='none';
             document.body.classList.remove('hide-cursor');
             showUploadingOverlay();
-            try{
-              await uploadAllResults();
-              hideUploadingOverlay();
-              showScreen('thank');
-            }catch(err){
-              hideUploadingOverlay();
-              console.error('Upload failed:', err);
-              showUploadFailedOverlay((err && err.message) ? err.message : String(err));
-            }
+            try{ await uploadAllResults(); hideUploadingOverlay(); showScreen('thank'); }
+            catch(err){ hideUploadingOverlay(); console.error('Upload failed:', err); showUploadFailedOverlay((err && err.message) ? err.message : String(err)); }
           }
         }
       }, FIX_MS);
     }
   }
 });
+window.addEventListener('keyup',(e)=>{ const k = e.key.toLowerCase(); if (k==='f' || k==='j') stopHold(); if (k==='enter') enterLocked = false; });
 
-window.addEventListener('keyup',(e)=>{
-  const k = e.key.toLowerCase();
-  if (k==='f' || k==='j') stopHold();
-  if (k==='enter') enterLocked = false;
-});
-
-/* 初始提示 */
 preloadTip.textContent = '等待选择性别开始预加载…';
 </script>
 </body>

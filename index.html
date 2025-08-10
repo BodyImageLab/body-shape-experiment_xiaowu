@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>体型调整实验 · CloudBase HTTP（整场一次上传 + BMI + 防闪屏）</title>
+<title>体型调整实验 · COS 上传（整场一次上传 + BMI + 防闪屏）</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 
@@ -93,10 +93,14 @@
   <button id="btnRetryUpload" class="btn">重试上传</button>
 </div>
 
+<!-- 引入 COS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/cos-js-sdk-v5/dist/cos-js-sdk-v5.min.js"></script>
+
 <script>
-/* ====== 你的 CloudBase HTTP 入口（域名 + 路径） ====== */
-const TCB_HTTP_ENDPOINT =
-  'https://bodyshape2025-8gk5msghc2121838-1373390636.ap-shanghai.app.tcloudbase.com/upload';
+/* ====== 改为 COS 上传所需常量 ====== */
+const STS_URL    = 'https://bodyshape2025-8gk5msghc2121838-1373390636.ap-shanghai.app.tcloudbase.com/cos-sts-event';
+const COS_BUCKET = 'bodyshape-data-1373390636';
+const COS_REGION = 'ap-shanghai';
 
 /* ===== 图片资源路径（GitHub Pages 上自动用线上；本地用相对路径） ===== */
 const IS_PROD   = location.hostname.endsWith('github.io');
@@ -263,25 +267,41 @@ function buildPayload(){
   };
 }
 
-/* ===== 上传（HTTP 云函数） ===== */
+/* ====== 新的：使用 STS + COS 直传 ====== */
 async function uploadAllResults(){
   const payload = buildPayload();
 
-  const res = await fetch(TCB_HTTP_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+  // 1) 获取临时密钥
+  const sts = await fetch(STS_URL).then(r=>r.json());
+  if (!sts.ok) throw new Error(sts.error || 'Get STS failed');
+
+  // 2) 初始化 COS
+  const cos = new COS({
+    getAuthorization: (options, cb) => cb({
+      TmpSecretId:  sts.credentials.TmpSecretId,
+      TmpSecretKey: sts.credentials.TmpSecretKey,
+      SecurityToken: sts.credentials.Token,
+      StartTime: Math.floor(Date.now()/1000) - 1,
+      ExpiredTime: Math.floor(Date.now()/1000) + 600
+    })
   });
 
-  // 打印原始返回，方便排错
-  const raw = await res.text();
-  let data = {};
-  try { data = JSON.parse(raw); } catch(_) {}
-  console.log('upload response:', raw);
+  // 3) 对象名（可按需调整目录结构）
+  const dateDir = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+  const key = `sessions/${dateDir}/${payload.sessionId}.json`;
 
-  if (!res.ok || !data.ok) {
-    throw new Error('Server error: ' + (data.error || res.status));
-  }
+  // 4) 上传
+  await new Promise((resolve,reject)=>{
+    cos.putObject({
+      Bucket: COS_BUCKET,
+      Region: COS_REGION,
+      Key: key,
+      Body: new Blob([JSON.stringify(payload)], { type:'application/json' })
+    }, (err,data)=>err?reject(err):resolve(data));
+  });
+
+  console.log('Uploaded to COS:', key);
+  return key;
 }
 
 /* ===== 流程控制 ===== */
@@ -326,7 +346,7 @@ btnStartPractice.addEventListener('click', ()=>{
   startPracticeBlock();
 });
 
-window.addEventListener('keydown', (e)=>{
+window.addEventListener('keydown',(e)=>{
   const k = e.key.toLowerCase();
 
   if (!adjusting){
@@ -343,7 +363,7 @@ window.addEventListener('keydown', (e)=>{
 
   if (adjusting){
     if (k==='f' || k==='j'){ if (holdKey!==k) startHold(k); }
-    else if (k==='r'){ idx = startIdx; pendingIndex = idx; } // 重置到起点，等下一帧切
+    else if (k==='r'){ idx = startIdx; pendingIndex = idx; } // 重置到起点
     else if (k==='enter'){
       if (enterLocked) return; enterLocked = true;
 
@@ -364,7 +384,7 @@ window.addEventListener('keydown', (e)=>{
           idealTrial++;
           if (idealTrial < IDEAL_TRIALS) startTrial();
           else {
-            // —— 完成最后一个“理想体型”试次：整场上传 ——
+            // —— 完成最后一个“理想体型”试次：整场上传 —— //
             stimulus.style.display='none';
             document.body.classList.remove('hide-cursor');
             showUploadingOverlay();

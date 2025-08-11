@@ -156,12 +156,12 @@
   #notice .nz-ck input:checked{border-color:var(--acc)}
   #notice .nz-ck input:checked::after{opacity:1; transform:translate(-50%,-60%) rotate(45deg) scale(1)}
 
-  /* 粒子画布只在 Notice 中显示 */
-  #noticeCanvas{position:fixed; inset:0; z-index:-1; pointer-events:none}
+  /* 全局粒子画布（在哪些页面显示由 JS 决定） */
+  #fxCanvas{position:fixed; inset:0; z-index:-1; pointer-events:none}
 
   @media (max-width:900px){ #notice .nz-grid{grid-template-columns:1fr} }
 
-  /* Notice 文案左对齐；小标题居中（按你之前的要求） */
+  /* Notice 文案左对齐；小标题居中 */
   #notice .panel,
   #notice .nz-card,
   #notice .nz-head,
@@ -176,9 +176,11 @@
 </head>
 <body>
 
-<!-- Notice（粒子 + 涟漪，仅此屏启用） -->
+<!-- ✅ 全局粒子画布：默认在 notice / guidelines / thankYou 显示 -->
+<canvas id="fxCanvas" aria-hidden="true"></canvas>
+
+<!-- Notice（注意事项） -->
 <section id="notice" class="screen active">
-  <canvas id="noticeCanvas" aria-hidden="true"></canvas>
   <div class="panel" role="region" aria-label="实验注意事项">
     <article class="nz-card">
       <header class="nz-head">
@@ -220,6 +222,7 @@
           <label for="agree">我已阅读并同意注意事项与保密条款</label>
         </div>
 
+        <!-- 注意：此进度条在点击按钮后才会从 0 → 100% -->
         <div class="bar" aria-hidden="true" style="width:240px;height:15px">
           <span id="noticePg" style="width:0%"></span>
         </div>
@@ -387,8 +390,10 @@ if (agree && btnNoticeNext){
     btnNoticeNext.disabled = true;
     await runNoticeProgress();
 
-    // 进度完毕后进入下一页
-    unmountNoticeFX();
+    // ✅ 进入实验前先请求全屏（有用户点击手势，最可靠）
+  enterFullscreen();
+
+    // 进度完毕后进入下一页（FX 会随 showScreen 自动切换）
     showScreen('guide');
   });
 }
@@ -410,11 +415,19 @@ function runNoticeProgress(){
   });
 }
 
-/* ===== Notice 粒子 & 涟漪：按需挂载/卸载 ===== */
-let noticeFX = null;
-function mountNoticeFX(){
-  if (noticeFX) return;
-  const cvs = document.getElementById('noticeCanvas');
+/* ===== 通用粒子 & 涟漪（可按需选择在哪些页面启用） ===== */
+
+/** 👇 在这里控制粒子背景在哪些“页面键”启用。
+ *  页面键是 showScreen(key) 里用的 key：
+ *  notice / guide / pracG / currG / idealG / thank
+ *  想关闭某页，就把相应 key 从集合里删掉即可。
+ */
+const FX_PAGES = new Set(['notice','guide','thank']);
+
+let bgFX = null;
+function mountFX(){
+  if (bgFX) return;
+  const cvs = document.getElementById('fxCanvas');
   const ctx = cvs.getContext('2d');
   const DPR = Math.min(2, window.devicePixelRatio || 1);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -469,9 +482,11 @@ function mountNoticeFX(){
   const onResize = ()=>resize();
   const onMove   = (e)=>{ mx = (e.clientX / innerWidth  - .5) * 2; my = (e.clientY / innerHeight - .5) * 2; };
 
-  // 按钮水波
+  // 水波涟漪：只在启用 FX 的页面内的按钮上
   const onClick = (e)=>{
-    const btn = e.target.closest('#notice .btn'); if(!btn) return;
+    // 用 section id 选择（注意：这里用的是 DOM id，不是 key）
+    const btn = e.target.closest('#notice .btn, #guidelines .btn, #thankYou .btn');
+    if(!btn) return;
     const rip = document.createElement('span');
     rip.style.position='absolute';
     rip.style.borderRadius='50%';
@@ -494,39 +509,48 @@ function mountNoticeFX(){
 
   resize(); if(!reduce){ draw(); }
 
-  noticeFX = {
+  bgFX = {
     destroy(){
       if (rafId) cancelAnimationFrame(rafId);
       window.removeEventListener('resize', onResize);
       window.removeEventListener('mousemove', onMove, {passive:true});
       document.removeEventListener('click', onClick);
-      const c = document.getElementById('noticeCanvas');
+      const c = document.getElementById('fxCanvas');
       if (c){ const ctx2=c.getContext('2d'); ctx2 && ctx2.clearRect(0,0,c.width,c.height); }
-      noticeFX = null;
+      bgFX = null;
     }
   };
 }
-function unmountNoticeFX(){ if (noticeFX) noticeFX.destroy(); }
+function unmountFX(){ if (bgFX) bgFX.destroy(); }
 
-/* 初始：Notice 激活，挂载粒子 */
-if (screens.notice.classList.contains('active')) mountNoticeFX();
+/* 根据当前屏的 key 决定是否启用粒子 */
+function maybeToggleFXFor(screenKey){
+  if (FX_PAGES.has(screenKey)) mountFX(); else unmountFX();
+}
 
 /* ===== 工具函数 ===== */
 function enterFullscreen(){ const el=document.documentElement; if (el.requestFullscreen) el.requestFullscreen().catch(()=>{}); }
+
+/* 切屏：统一在这里控制 FX 的开关 */
 function showScreen(key){
   Object.values(screens).forEach(s=>s.classList.remove('active'));
   screens[key].classList.add('active');
-  // 如果切换回 notice，再次挂载；否则卸载
-  if (key === 'notice') mountNoticeFX(); else unmountNoticeFX();
+  maybeToggleFXFor(key);
 }
+
+/* 初始化：根据默认 active 的屏决定是否开启 FX */
+{
+  const activeKey = Object.entries(screens).find(([k,el])=>el.classList.contains('active'))?.[0] || 'notice';
+  maybeToggleFXFor(activeKey);
+}
+
+/* ===== 预加载 ===== */
 function genNames(prefix, n, ext){ const a=[]; for (let i=1;i<=n;i++) a.push(`${prefix}${i}.${ext}`); return a; }
 function clamp(v,lo,hi){ return Math.min(hi, Math.max(lo,v)); }
 function getSeriesURLs(which){
   if (which === 'M'){ const names = M_LIST.length ? M_LIST : genNames('M', MAX_M, M_EXT); return names.map(n => BASE_URL_M + n); }
   else { const names = F_LIST.length ? F_LIST : genNames('F', MAX_F, F_EXT); return names.map(n => BASE_URL_F + n); }
 }
-
-/* ===== 预加载 ===== */
 async function preloadAll(urls){
   if (!urls.length) return;
   let done = 0, total = urls.length;

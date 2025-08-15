@@ -3,319 +3,934 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>体型调整实验 · COS 上传（整场一次上传 + BMI + 防闪屏）</title>
-
+<title>实验网络社区 · 公开情境 UI（蓝青主题 · 紧凑版 + 实验嵌套）</title>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-
 <style>
+  /* ========== 外层：公开情境 UI（保持你原样式） ========== */
   :root{
-    /* 主题与质感 */
-    --bg-grad-1:#1a1a1a; --bg-grad-2:#22201c; --bg-grad-3:#26231f;
-    --txt:#e9e7e4; --muted:#bfc4c9;
-    --acc:#f2c14e; --acc-2:#ffd86b;
-
-    /* 毛玻璃/卡片 */
-    --panel-bg: rgba(30,30,30,.38);
-    --panel-blur: 16px;
-    --panel-saturate: 145%;
-    --panel-radius: 16px;
-    --panel-pad: 40px;
+    --bg1:#0a1421; --bg2:#0a111b; --bg3:#07101a;
+    --ink:#eaf4ff; --muted:#9fb7c9;
+    --acc:#35c9ff; --acc-2:#22d3ee;
+    --line:#203349;
+    --panel:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.025));
+    --wb-bar:#0f1724; --wb-search:#152235;
+    --header-h:58px; --radius:14px;
   }
-
   *{box-sizing:border-box}
   html,body{
-    margin:0;height:100%;color:var(--txt);
+    height:100%;margin:0;color:var(--ink);
     font-family:'Roboto',ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif;
-    overflow:hidden
-  }
-  body{
-    display:flex;align-items:center;justify-content:center;padding:36px;
     background:
-      radial-gradient(1200px 700px at 20% 0%, rgba(255,207,92,.06), transparent 65%),
-      radial-gradient(1000px 700px at 80% 100%, rgba(255,207,92,.05), transparent 60%),
-      linear-gradient(180deg, var(--bg-grad-1), var(--bg-grad-2) 40%, var(--bg-grad-3));
+      radial-gradient(1200px 700px at 15% 0%, rgba(53,201,255,.10), transparent 65%),
+      radial-gradient(1000px 700px at 90% 100%, rgba(34,211,238,.08), transparent 60%),
+      linear-gradient(180deg, var(--bg1), var(--bg2) 40%, var(--bg3));
   }
-  .hide-cursor{cursor:none}
 
-  /* 屏幕容器 */
-  .screen{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:28px;text-align:center}
-  .screen.active{display:flex}
-
-  /* 全屏毛玻璃面板（所有页面统一使用） */
-  .panel{
-    position: fixed; inset: 0;
+  /* ========== ★ 预阶段容器（不嵌套 UI，独立全屏） ========== */
+  #preStage{position:fixed; inset:0; display:block;}
+  #preStage .screen{position:absolute; inset:0; display:none; align-items:center; justify-content:center; padding:28px; text-align:center}
+  #preStage .screen.active{display:flex}
+  #preStage .panel{
+    position:absolute; inset:0;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    background: var(--panel-bg);
-    backdrop-filter: blur(var(--panel-blur)) saturate(var(--panel-saturate));
-    -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(var(--panel-saturate));
-    padding: var(--panel-pad);
-    box-shadow: none; border: none; border-radius: 0;
+    background: rgba(13,26,43,.30);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border:1px solid rgba(53,201,255,.18);
+    border-radius: 12px;
+    box-shadow: none;
+    padding: 28px;
   }
-
-  /* 统一字号 */
-  h1{ margin:10px 0; text-shadow:0 1px 1px rgba(0,0,0,.25); font-size:36px; }
-  p{  margin:10px 0; text-shadow:0 1px 1px rgba(0,0,0,.25); font-size:28px; }
-  .muted{color:var(--muted); font-size:18px}
-
-  /* 按钮 */
-  .btn{
+  #preStage .btn{
     position:relative; overflow:hidden;
     background:linear-gradient(180deg, var(--acc-2), var(--acc));
-    color:#2b1f08; border:0; border-radius:14px;
-    padding:14px 32px; font-size:22px; cursor:pointer; margin:10px 8px; font-weight:700;
-    box-shadow:0 8px 18px rgba(242,193,78,.15), inset 0 1px rgba(255,255,255,.35);
+    color:#062438; border:0; border-radius:12px;
+    padding:12px 26px; font-size:18px; cursor:pointer; margin:8px 6px; font-weight:800;
+    box-shadow:0 8px 18px rgba(48,170,220,.18), inset 0 1px rgba(255,255,255,.25);
     transition:.18s transform ease, .18s filter ease, .18s box-shadow ease;
   }
-  .btn[disabled]{opacity:.55;cursor:not-allowed}
-  .btn:hover{filter:brightness(1.05); transform:translateY(-1px)}
-  .btn:active{transform:translateY(0)}
-  #btnStartPractice{ padding:16px 48px; }
-
-  /* 输入框 */
-  input{
-    margin:8px; padding:12px 14px; font-size:18px;
-    border:1.5px solid rgba(255,255,255,.16); border-radius:12px;
-    background:rgba(255,255,255,.06); color:#fff; outline:none;
+  #preStage .btn[disabled]{opacity:.55;cursor:not-allowed}
+  #preStage .btn:hover{filter:brightness(1.06); transform:translateY(-1px)}
+  #preStage .btn:active{transform:translateY(0)}
+  #preStage input{
+    margin:6px; padding:10px 12px; font-size:16px;
+    border:1.5px solid rgba(255,255,255,.12); border-radius:10px;
+    background:rgba(255,255,255,.06); color:#eaf4ff; outline:none;
     transition:.2s border-color,.2s box-shadow,.2s background;
   }
-  input::placeholder{ color:#d7d7d7; opacity:.75 }
-  input:focus{
+  #preStage input::placeholder{ color:#cfe0f2; opacity:.75 }
+  #preStage input:focus{
     border-color:var(--acc);
-    box-shadow:0 0 0 3px rgba(242,193,78,.18);
+    box-shadow:0 0 0 3px rgba(53,201,255,.18);
     background:rgba(255,255,255,.08);
   }
+  #preStage .bar{width:min(900px,78%);height:12px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));border-radius:999px;overflow:hidden;margin-top:10px;border:1px solid rgba(255,255,255,.10);box-shadow:inset 0 2px 6px rgba(0,0,0,.45)}
+  #preStage .bar>span{display:block;height:100%;width:0;background:linear-gradient(90deg,#9fe6ff,#55c2ff 50%,#2aa7ff)}
+  /* === 新增：练习结束过渡页的旋转加载圈 === */
+  #preStage .loader{
+    width:44px;height:44px;margin:12px auto;border-radius:50%;
+    border:3px solid rgba(255,255,255,.18);
+    border-top-color:var(--acc);
+    animation:preSpin 1s linear infinite;
+  }
+  @keyframes preSpin{ to{ transform: rotate(360deg);} }
 
-  /* 进度条 */
-  .bar{width:min(900px,78vw);height:12px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));border-radius:999px;overflow:hidden;margin-top:16px;border:1px solid rgba(255,255,255,.10);box-shadow:inset 0 2px 6px rgba(0,0,0,.45)}
-  .bar>span{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffe082,#ffc107 30%,#ffca28 70%,#ffd54f)}
+  /* === 新增：postPractice 磨砂玻璃文本框 === */
+  #preStage .glass-note{
+    width:min(880px,92%);
+    margin:14px 0 6px;
+    padding:14px 16px;
+    text-align:left;
+    background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03));
+    border:1px solid rgba(255,255,255,.22);
+    border-radius:14px;
+    backdrop-filter: blur(14px) saturate(130%);
+    -webkit-backdrop-filter: blur(14px) saturate(130%);
+    box-shadow:0 10px 30px rgba(0,0,0,.30), inset 0 0 0 1px rgba(255,255,255,.04);
+  }
+  #preStage .glass-note h3{
+    text-align: center;
+    margin:0 0 8px 0;
+    font-weight:800;
+    font-size:calc(18px * var(--pre-scale));
+  }
+  #preStage .glass-note ul{
+    margin:0;
+    padding-left:18px;
+    line-height:1.75;
+    font-size:calc(18px * var(--pre-scale));
+    color:#eaf4ff;
+    opacity:.95;
+  }
+  #preStage .glass-note li + li{ margin-top:4px; }
 
-  /* 刺激与提示 */
-  #stimulus{max-width:80%;height:60vh;display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);will-change:opacity,transform}
-  #fixation{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:64px;color:var(--acc)}
-  .hint{position:absolute;font-size:24px;color:#1e1b16;font-weight:700;background:linear-gradient(180deg,#ffe082,#ffd54f);border:0;border-radius:12px;padding:8px 12px;box-shadow:0 6px 20px rgba(0,0,0,.22)}
-  .hint-left{left:8%;top:50%;transform:translateY(-50%);display:none}
-  .hint-right{right:8%;top:50%;transform:translateY(-50%);display:none}
-  #currentTypeLabel,#idealTypeLabel{font-size:26px;color:#ffe59a;opacity:0;transition:opacity .2s;position:absolute;top:82%;left:50%;transform:translateX(-50%)}
-  #practicePrompt{position:absolute;top:82%;left:50%;transform:translateX(-50%);color:#ffe59a;display:none}
+  /* ========== 社区 UI 应用（初始化隐藏，进入正式实验才显示） ========== */
+  .app{position:fixed;inset:0;display:grid;grid-template-rows:var(--header-h) 1fr}
+  #communityApp{display:none;} /* ★ 初始隐藏，练习结束后显示 */
 
-  /* ====== Notice 页面（排版优化） ====== */
-  #notice .nz-card{
-    width:min(980px,92vw);
+  .wb-header{background:var(--wb-bar);border-bottom:1px solid #0b1320}
+  .wb-inner{
+    height:var(--header-h);
+    max-width:1280px; margin:0 auto;
+    display:grid; align-items:center;
+    grid-template-columns: minmax(360px, 440px) 1fr minmax(320px, 360px);
+    gap:16px; padding:0 22px;
+  }
+  .wb-left{display:flex;align-items:center;gap:12px;min-width:0}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;white-space:nowrap}
+  .brand svg{display:block}
+  .wb-search{
+    flex:1;display:flex;align-items:center;gap:8px;min-width:220px;
+    padding:6px 12px;border-radius:999px;background:var(--wb-search);color:#cfe0f2
+  }
+  .wb-search input{flex:1;border:0;outline:0;background:transparent;color:#e8f2ff;font-size:14px;min-width:0}
+  .wb-center{height:100%;display:flex;align-items:center;justify-content:center;gap:28px}
+  .wb-tab{position:relative;display:flex;align-items:center;gap:6px;color:#e6eef9;opacity:.95}
+  .wb-tab.active{color:#ffffff}
+  .wb-tab.active::after{
+    content:"";position:absolute;left:-6px;right:-6px;bottom:-12px;height:3px;border-radius:999px;
+    background:linear-gradient(90deg,#35c9ff,#22d3ee);
+  }
+  .wb-right{display:flex;align-items:center;gap:14px;justify-content:flex-end}
+  .wb-icon{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#142439;flex:0 0 auto}
+  .wb-post{padding:8px 14px;border-radius:10px;background:linear-gradient(90deg,#35c9ff,#22d3ee);color:#042333;font-weight:800;border:0;cursor:pointer}
+  .layout{display:grid;grid-template-columns:260px minmax(0,1fr) 320px;gap:12px;padding:12px;height:calc(100dvh - var(--header-h))}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .nav{padding:14px;display:flex;flex-direction:column;min-height:0}
+  .sec{font-size:12px;color:#89a6bf;margin:6px}
+  .nav a{position:relative;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;color:var(--ink);text-decoration:none;transition:.18s}
+  .nav a .ico{width:24px;height:24px;display:grid;place-items:center;border-radius:10px;background:linear-gradient(180deg,#0f1f33,#0c1828);border:1px solid rgba(120,160,200,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+  .nav a:hover{background:linear-gradient(180deg,rgba(53,201,255,.10),rgba(34,211,238,.06));box-shadow:0 6px 18px rgba(20,40,80,.25)}
+  .nav a.active{background:linear-gradient(180deg,rgba(53,201,255,.14),rgba(34,211,238,.10));box-shadow:0 10px 26px rgba(25,110,180,.22)}
+  .nav a.active::before{content:"";position:absolute;left:6px;top:8px;bottom:8px;width:3px;border-radius:999px;background:linear-gradient(180deg,#35c9ff,#22d3ee)}
+  .tags{display:flex;flex-direction:column;gap:10px;padding:6px 6px 0}
+  .tag{display:inline-flex;align-items:center;gap:8px;width:100%;padding:10px 12px;border-radius:999px;font-weight:600;color:#d9f3ff;text-decoration:none;background:linear-gradient(180deg,#0e2136,#0c1b2c);border:1px solid rgba(120,160,200,.18)}
+  .tag::before{content:"#";font-weight:900;color:var(--acc)}
+  .main{display:grid;grid-template-rows:auto minmax(420px,1fr) auto;gap:12px;min-width:0;padding:10px}
+  .composer{border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,#0e1a2b,#0a1523);box-shadow:0 8px 24px rgba(10,20,40,.25)}
+  .composer-top{padding:10px 12px 0}
+  .composer-input{width:100%;min-height:52px;resize:vertical;border:0;outline:0;border-radius:10px;padding:10px 12px;font-size:13px;color:#eaf4ff;background:#0f1a2a;box-shadow:inset 0 0 0 1px rgba(53,201,255,.08)}
+  .composer-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-top:1px solid rgba(255,255,255,.06)}
+  .composer-actions{display:flex;align-items:center;gap:12px}
+  .act{display:flex;flex-direction:column;align-items:center;gap:4px;color:#cde7ff;font-size:11px;opacity:.95}
+  .act svg{width:20px;height:20px}
+  .composer-right{display:flex;align-items:center;gap:10px}
+  .divider{width:1px;height:20px;background:#2a3a4f}
+  .privacy{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;background:#0f2134;border:1px solid rgba(53,201,255,.18)}
+  .privacy select{background:transparent;color:#eaf4ff;border:0;outline:0}
+  .send{padding:8px 12px;border-radius:10px;background:linear-gradient(90deg,#35c9ff,#22d3ee);color:#042333;font-weight:800;border:0;cursor:pointer}
+  .viewport{position:relative;min-height:420px;border:1px dashed rgba(47,107,255,.35);border-radius:12px;background:linear-gradient(180deg,#0d1a2b,#0a1523)}
+  .center-note{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:18px}
+  .center-note h2{margin:0 0 10px;font-size:28px}
+  .center-note p{margin:6px 0;font-size:18px;color:var(--muted)}
+  .kbd{display:inline-block;padding:1px 6px;border-radius:6px;border:1px solid rgba(53,201,255,.35);background:#0f2134;font-weight:700;font-size:16px}
+  .ticker{height:38px;border:1px solid var(--line);border-radius:10px;background:linear-gradient(180deg,#0f1a2a,#0c1524);overflow:hidden;display:flex;align-items:flex-start}
+  .ticker ul{list-style:none;margin:0;padding:0}
+  .ticker li{display:flex;align-items:center;gap:8px;height:38px;padding:0 12px;font-size:12px;color:var(--muted);white-space:nowrap}
+  .dot{width:6px;height:6px;border-radius:999px;background:var(--acc)}
+  .aside{display:grid;grid-template-rows:auto auto 1fr;gap:12px;padding:10px;overflow-y:hidden}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px}
+  .subject{display:flex;align-items:center;gap:12px}
+  .subject .big-av{width:48px;height:48px;border-radius:50%;background:#142439 center/cover no-repeat;border:1px solid #2a3a42;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+  .subject .meta{display:flex;flex-direction:column}
+  .subject .meta .id{font-weight:700;letter-spacing:.3px}
+  .pill{font-size:11px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;color:var(--muted);align-self:flex-start}
+  .peers-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .peer{background:linear-gradient(180deg,#131e2d,#101a28);border:1px solid var(--line);border-radius:12px;padding:6px}
+  .peer-vp{position:relative;aspect-ratio:16/10;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,#0e1a2a,#0a1523)}
+  .peer-vp img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+  .mini-av{position:absolute;left:8px;top:8px;width:20px;height:20px;border-radius:50%;background:#1a2534 center/cover no-repeat;border:1px solid rgba(255,255,255,.55);box-shadow:0 0 0 2px rgba(10,20,30,.35)}
+  .peer-meta{display:flex;align-items:center;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--muted)}
+  .self-vp{position:relative;aspect-ratio:16/10;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,#0e1a2a,#0a1523)}
+  .self-vp img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+  .progress{margin-top:6px}
+  .progress .label{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#muted;margin-bottom:4px}
+  .bar{width:100%;height:10px;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));box-shadow:inset 0 2px 6px rgba(0,0,0,.45)}
+  .bar>span{display:block;height:100%;width:0;background:linear-gradient(90deg,#91dcff,#55c2ff 50%,#2aa7ff)}
+  @media (max-width:1200px){ .wb-inner{grid-template-columns:minmax(300px,380px) 1fr minmax(280px,320px)} }
+  @media (max-width:1000px){ .wb-inner{grid-template-columns:1fr auto auto}.wb-center{display:none} }
+  @media (max-width:900px){ .layout{grid-template-columns:1fr;grid-template-rows:auto auto auto;height:auto}.aside{order:-1} }
+
+  /* ========== 内层：实验嵌套进中栏 .viewport 的样式限定（保留） ========== */
+  #expHost { position:absolute; inset:0; }
+  #expHost .screen{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:28px;text-align:center}
+  #expHost .screen.active{display:flex}
+  #expHost .panel{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background: rgba(13,26,43,.30);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border:1px solid rgba(53,201,255,.18);
+    border-radius: 12px;
+    box-shadow: none;
+    padding: 28px;
+  }
+  #expHost{ --txt:#e9edf6; --muted:#9fb7c9; --acc:#35c9ff; --acc-2:#22d3ee; }
+  #expHost .btn{
+    position:relative; overflow:hidden;
+    background:linear-gradient(180deg, var(--acc-2), var(--acc));
+    color:#062438; border:0; border-radius:12px;
+    padding:12px 26px; font-size:18px; cursor:pointer; margin:8px 6px; font-weight:800;
+    box-shadow:0 8px 18px rgba(48,170,220,.18), inset 0 1px rgba(255,255,255,.25);
+    transition:.18s transform ease, .18s filter ease, .18s box-shadow ease;
+  }
+  #expHost .btn[disabled]{opacity:.55;cursor:not-allowed}
+  #expHost .btn:hover{filter:brightness(1.06); transform:translateY(-1px)}
+  #expHost .btn:active{transform:translateY(0)}
+  #expHost input{
+    margin:6px; padding:10px 12px; font-size:16px;
+    border:1.5px solid rgba(255,255,255,.12); border-radius:10px;
+    background:rgba(255,255,255,.06); color:#eaf4ff; outline:none;
+    transition:.2s border-color,.2s box-shadow,.2s背景;
+  }
+  #expHost input::placeholder{ color:#cfe0f2; opacity:.75 }
+  #expHost input:focus{
+    border-color:var(--acc);
+    box-shadow:0 0 0 3px rgba(53,201,255,.18);
     background:rgba(255,255,255,.08);
-    border:1px solid rgba(255,255,255,.14);
-    border-radius:18px;
-    box-shadow:0 18px 42px rgba(0,0,0,.35), inset 0 1px rgba(255,255,255,.2);
-    padding:22px 22px 16px;
-    position:relative;
   }
-  #notice header.nz-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
-  #notice .nz-badge{font-size:20px;background:linear-gradient(180deg,var(--acc-2),var(--acc)); color:#2b1f08; padding:5px 10px; border-radius:999px; font-weight:700}
-  #notice h1.nz-title{margin:0;font-size:26px}
-  #notice p.nz-lead{margin:.25rem 0 1rem;color:#f3f3f3;opacity:.9;font-size:16px;line-height:1.7;max-width:68ch}
+  #expHost .bar{width:min(900px,78%);height:12px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));border-radius:999px;overflow:hidden;margin-top:10px;border:1px solid rgba(255,255,255,.10);box-shadow:inset 0 2px 6px rgba(0,0,0,.45)}
+  #expHost .bar>span{display:block;height:100%;width:0;background:linear-gradient(90deg,#9fe6ff,#55c2ff 50%,#2aa7ff)}
+  #expHost #stimulus{max-width:min(86vw, 100%);  /* 视口 86%，同时不超过容器 */;height:64vh; width: auto;display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);will-change:opacity,transform}
+  #expHost #fixation{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:64px;color:var(--acc)}
+  #expHost .hint{position:absolute;font-size:18px;color:#062438;font-weight:800;background:linear-gradient(180deg,#bfe9ff,#7fd3ff);border:0;border-radius:10px;padding:6px 10px;box-shadow:0 6px 20px rgba(0,0,0,.22)}
+  #expHost .hint-left{left:6%;top:50%;transform:translateY(-50%);display:none}
+  #expHost .hint-right{right:6%;top:50%;transform:translateY(-50%);display:none}
+  #expHost #currentTypeLabel,#expHost #idealTypeLabel{font-size:18px;color:#cfe8ff;opacity:0;transition:opacity .2s;position:absolute;top:86%;left:50%;transform:translateX(-50%)}
+  #expHost #practicePrompt{position:absolute;top:86%;left:50%;transform:translateX(-50%);color:#cfe8ff;display:none}
+  #expHost #fxCanvas{position:absolute; inset:0; z-index:0; pointer-events:none}
+  #overlayUploading, #overlayFailed{position:absolute !important; inset:0 !important;}
 
-  #notice .nz-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  #notice .nz-pane{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px 18px}
-  #notice .nz-pane h2{margin:0 0 8px 0;font-size:20px}
-  #notice .nz-pane p{margin:8px 0 0 0;line-height:1.8;font-size:16px;letter-spacing:.1px}
-  #notice .nz-pane ul{margin:8px 0 0 0;padding-left:18px;line-height:1.8;font-size:16px}
-  #notice .nz-pane li{margin:.35em 0;padding-left:.2em}
-  #notice .nz-pane li::marker{color:#ffd86b}
-  #notice .nz-muted{color:var(--muted);font-size:13px}
+  /* —— 修复点击：避免进度条挡住按钮，保证按钮在最上层 —— */
+  #preStage{ z-index:9999; pointer-events:auto; }
+  #preStage .nz-actions{ position:relative; z-index:3; }
+  #preStage #btnNoticeNext{ position:relative; z-index:4; pointer-events:auto; cursor:pointer; }
+  #preStage .bar{ pointer-events:none; }
 
-  /* 底部操作区 */
-  #notice .nz-actions{
-    display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
-    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
-    border-radius:14px; padding:12px 14px; margin-top:14px
+  /* ★★★ 新增：练习阶段在 preStage 内独立呈现主机位（不改动其他区域） ★★★ */
+  #practiceHost{ position:absolute; inset:0; display:none; }
+  #practiceHost img#pStimulus{
+    max-width:86%; height:64vh; display:none;
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    will-change:opacity,transform;
+  }
+  #practiceHost #pFixation{
+    display:none; position:absolute; top:50%; left:50%;
+    transform:translate(-50%,-50%); font-size:64px; color:var(--acc);
+  }
+  #practiceHost .hint{
+    position:absolute; font-size:18px; color:#062438; font-weight:800;
+    background:linear-gradient(180deg,#bfe9ff,#7fd3ff); border:0; border-radius:10px;
+    padding:6px 10px; box-shadow:0 6px 20px rgba(0,0,0,.22);
+  }
+  #practiceHost .hint-left{ left:6%; top:50%; transform:translateY(-50%); display:none }
+  #practiceHost .hint-right{ right:6%; top:50%; transform:translateY(-50%); display:none }
+  #practiceHost #pPracticePrompt{
+    position:absolute; top:86%; left:50%; transform:translateX(-50%);
+    color:#cfe8ff; display:none;
   }
 
-  /* 自定义勾选框：透明小方块 → 点击出现金色对号 */
-  #notice .nz-ck{display:flex;align-items:center;gap:10px}
-  #notice .nz-ck input{
-    appearance:none; -webkit-appearance:none; -moz-appearance:none;
-    width:26px;height:26px;border-radius:6px;
-    border:2px solid rgba(255,255,255,.28);
-    background:transparent; cursor:pointer; position:relative;
-    transition:.18s border-color,.18s box-shadow;
+  /* ★ 新增：中栏提示标题 & 侧栏紧凑发帖框（不影响其他区域） */
+.main-tip{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px 14px;
+  background:linear-gradient(180deg,#0e1a2b,#0a1523);
+  box-shadow:0 8px 24px rgba(10,20,40,.25);
+}
+.main-tip .title{ display:flex; align-items:center; gap:8px; font-weight:700; letter-spacing:.3px; }
+.main-tip .sub{ font-size:12px; color:var(--muted); margin-top:4px; }
+
+/* 仅当 composer 位于右侧栏时，做适配缩放 */
+.aside .composer{ padding:8px; }
+.aside .composer-top{ padding:8px 8px 0; }
+.aside .composer-input{ min-height:44px; font-size:12px; }
+.aside .composer-bottom{ padding:6px 8px; }
+.aside .act svg{ width:18px; height:18px; }
+.aside .act span{ display:none; }         /* 图标保留，文字缩掉以省空间 */
+.aside .privacy{ padding:4px 8px; }
+.aside .send{ padding:6px 10px; }
+
+
+  /* ★★★ 新增：公示窗小视窗进度环（仅改此块样式以容纳环心头像） ★★★ */
+  @keyframes ringBeat{
+    0%,100%{ transform:scale(1); }
+    50%{ transform:scale(1.06); }
   }
-  /* 金色描边与焦点态 */
-  #notice .nz-ck input:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(242,193,78,.25);border-color:var(--acc)}
-  #notice .nz-ck input:hover{border-color:rgba(255,255,255,.45)}
-
-  /* 用两条边绘制“对号”，更稳（不用字体） */
-  #notice .nz-ck input::after{
-    content:""; position:absolute; left:50%; top:50%;
-    width:8px; height:14px; /* 对号尺寸 */
-    border-right:3px solid var(--acc);
-    border-bottom:3px solid var(--acc);
-    transform:translate(-50%,-60%) rotate(45deg) scale(0);
-    transform-origin:center; opacity:0;
-    transition:transform .16s ease, opacity .16s ease;
-    pointer-events:none;
+  .peer-vp .ring{
+    position:absolute; right:8px; top:8px; width:26px; height:26px;
+    border-radius:50%;
+    background: conic-gradient(var(--acc) calc(var(--p,0)*1turn), rgba(255,255,255,.15) 0);
+    display:grid; place-items:center;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.12), 0 0 0 2px rgba(0,0,0,.25);
+    animation: ringBeat 2s ease-in-out infinite;
   }
-  #notice .nz-ck input:checked{border-color:var(--acc)}
-  #notice .nz-ck input:checked::after{opacity:1; transform:translate(-50%,-60%) rotate(45deg) scale(1)}
+  .peer-vp .ring::after{
+    content:''; width:22px; height:22px; border-radius:50%;
+    background:rgba(10,20,35,.85);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+    position:absolute; inset:2px;
+  }
+  .peer-vp .ring .av{
+    position:absolute; inset:4px;
+    border-radius:50%;
+    background:center/cover no-repeat;
+    box-shadow:0 0 0 1px rgba(255,255,255,.45), 0 0 0 2px rgba(10,20,30,.35);
+    /* 确保不受父级亮度动画影响（父级未再使用filter，已避免闪烁） */
+    will-change:transform;
+  }
+  /* 仅作用于左栏 在线（实时） 的头像与名称 */
+aside.panel.nav .status .avatars .avatar{
+  justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 44px;                 /* 与头像同宽，给 label 一个换行参照 */
+}
 
-  /* 全局粒子画布（在哪些页面显示由 JS 决定） */
-  #fxCanvas{position:fixed; inset:0; z-index:-1; pointer-events:none}
+aside.panel.nav .status .avatars .avatar label{
+  display: block;
+  width: 44px;                 /* 关键：限制宽度才会换行 */
+  margin-top: 4px;
+  text-align: center;
+  white-space: normal;         /* 允许换行 */
+  overflow-wrap: anywhere;     /* 没空格也能断开 */
+  word-break: break-word;      /* 兜底 */
+  line-height: 1.2;
+}
+.peers-grid .peer .peer-meta .t{ display:none; }
+/* 隐藏中部导航 tabs */
+.wb-center{ display:none !important; }
 
-  @media (max-width:900px){ #notice .nz-grid{grid-template-columns:1fr} }
+/* 头部由 3 列 -> 2 列：左(品牌+搜索) | 右(图标+发布) */
+.wb-inner{
+  grid-template-columns: minmax(360px,1fr) minmax(320px,360px);
+}
 
-  /* Notice 文案左对齐；小标题居中 */
-  #notice .panel,
-  #notice .nz-card,
-  #notice .nz-head,
-  #notice .nz-lead,
-  #notice .nz-pane,
-  #notice .nz-pane p,
-  #notice .nz-pane ul,
-  #notice .nz-pane li { text-align:left; }
-  #notice .nz-pane h2 { text-align:center; }
-  #notice .nz-pane p, #notice .nz-lead { word-break:break-word; white-space:normal; }
+/* 窄屏时也保持两列（覆盖原 @media 的 1fr auto auto） */
+@media (max-width:1000px){
+  .wb-inner{ grid-template-columns: 1fr minmax(320px,360px); }
+}
+/* 顶部头部：改成 2 列布局——左 1fr | 右 auto */
+.wb-inner{
+  grid-template-columns: 1fr auto;
+}
+
+/* 左列占满可用空间，搜索框撑开，避免被挤 */
+.wb-left{ min-width: 0; }          /* 允许收缩 */
+.wb-left .wb-search{ flex: 1; }     /* 搜索框拉伸占满左列 */
+
+/* 右列内容贴右对齐 */
+.wb-right{ justify-content: flex-end; }
+
+/* 窄屏也保持两列（覆盖原有 @media） */
+@media (max-width:1000px){
+  .wb-inner{ grid-template-columns: 1fr auto; }
+}
+.wb-inner{ max-width: none; width: 100%; }  /* 可保留原有 padding 作为左右内边距 */
+.main .ticker{ height: 52px; }      /* 想多高就写多少，比如 52 或 56 */
+.main .ticker li{ height: 52px; }   /* 每条消息行高同步 */
+/* 正式实验的展示图往上提（50%→46%，数值越小越靠上） */
+#expHost #stimulus{ top:46%; }
+
+/* 练习阶段一起上提 */
+#practiceHost #pStimulus{ top:46%; }
+/* —— 大框（包住整块 Notice）—— */
+#preStage .nz-card{
+  position: relative;
+  width: min(1100px, 94%) !important;   /* 比原来更宽一点 */
+  margin: 0 auto;
+  padding: 22px 22px 16px !important;   /* 大框内边距 */
+  border-radius: 18px !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+  border: 1.5px solid rgba(53,201,255,.22);
+  box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.04);
+  backdrop-filter: blur(8px) saturate(130%);
+}
+
+/* 大框里的内圈描边（可选，让“套”感更明显） */
+#preStage .nz-card::before{
+  content:"";
+  position:absolute; inset:10px; border-radius:14px;
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
+  pointer-events:none;
+}
+
+/* —— 小框（每个面板）—— */
+#preStage .nz-pane{
+  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)) !important;
+  border: 1px solid rgba(53,201,255,.20) !important;
+  border-radius: 14px !important;
+  padding: 16px !important;
+  box-shadow: 0 6px 24px rgba(0,0,0,.25);
+}
+
+/* 标题稍大一点，匹配“套框”的气质 */
+#preStage .nz-pane h2{
+  font-size: 20px !important;
+  margin: 0 0 10px 0 !important;
+}
+
+/* 两列布局（保留两块时用）；想单栏就把下面一段改成 1fr */
+#preStage .nz-grid{
+  grid-template-columns: 1fr 1fr !important;
+  gap: 16px !important;
+}
+
+/* 列表去圆点（如果你还没去掉的话） */
+#preStage .nz-pane ul{ list-style:none; padding-left:0 !important; line-height:1.9; font-size:16px; }
+/* 整个 Notice 卡（大框+小框+文字）统一放大 1.15 倍 */
+#preStage .nz-card{
+  transform: scale(1.15);
+  transform-origin: top center;
+  width: min(980px, 90%);           /* 略收窄以抵消放大后的外溢，可按需微调 */
+}
+/* 防止被裁切 */
+#preStage .panel{ overflow: visible; }
+
+/* Notice 两个面板上下排布 */
+#preStage .nz-grid{
+  grid-template-columns: 1fr !important;  /* 单列 */
+  gap: 16px !important;                   /* 上下间距 */
+}
+/* === 统一放大开关（改这里的比例即可） === */
+:root{ --pre-scale: 1.25; } /* 1.0=原大小；1.2/1.25/1.3 更大 */
+
+/* 1) 指导语页 & 练习说明面板里的文字整体放大 */
+#guidelines .panel,
+#practiceGuidelines .panel{
+  font-size: calc(22px * var(--pre-scale));
+  line-height: calc(0.5 * 1); /* 行高同步放一些更好读 */
+}
+#guidelines h1{
+  font-size: calc(22px * var(--pre-scale));
+  font-weight: 800;
+}
+
+/* 2) 这两页里的按钮/输入框一起放大 */
+#preStage .btn{
+  font-size: calc(18px * var(--pre-scale));
+  padding: calc(12px * var(--pre-scale)) calc(26px * var(--pre-scale));
+  border-radius: calc(12px * var(--pre-scale));
+}
+#preStage input{
+  font-size: calc(16px * var(--pre-scale));
+  padding: calc(10px * var(--pre-scale)) calc(12px * var(--pre-scale));
+  border-radius: calc(10px * var(--pre-scale));
+}
+
+/* 3) 练习阶段屏幕上的提示文字也放大（长按F/J、小提示等） */
+#practiceHost .hint{                               /* 左右两边蓝色小贴片 */
+  font-size: calc(18px * var(--pre-scale));
+  padding: calc(6px * var(--pre-scale)) calc(10px * var(--pre-scale));
+  border-radius: calc(10px * var(--pre-scale));
+}
+#practiceHost #pPracticePrompt{                   /* 底部“按Enter结束本次练习” */
+  font-size: calc(16px * var(--pre-scale));
+}
+
+/* （可选）覆盖这页的小字提示“等待选择性别开始预加载…”的内联字号 */
+#guidelines #preloadTip{ font-size: calc(14px * var(--pre-scale)) !important; }
+
+/* （可选）如果想把“上传失败”弹窗里的按钮也一并放大 */
+#expHost .btn{ font-size: calc(18px * var(--pre-scale)); }
+/* ★ 预阶段专用粒子画布 */
+#preStage #preFxCanvas{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+}
+
 </style>
 </head>
 <body>
 
-<!-- ✅ 全局粒子画布：默认在 notice / guidelines / thankYou 显示 -->
-<canvas id="fxCanvas" aria-hidden="true"></canvas>
-
-<!-- Notice（注意事项） -->
-<section id="notice" class="screen active">
-  <div class="panel" role="region" aria-label="实验注意事项">
-    <article class="nz-card">
-      <header class="nz-head">
-        <span class="nz-badge">NOTICE</span>
-        <h1 class="nz-title">欢迎参加体型调整实验</h1>
-      </header>
-
-      <p class="nz-lead"></p>
-
-      <section class="nz-grid">
-        <!-- 左：注意事项 -->
-        <div class="nz-pane">
-          <h2>注意事项</h2>
-          <ul>
-            <li>为保证您流畅的实验体验，建议您在良好的网络环境下进行，关闭消息提醒与弹窗，避免分心。</li>
-            <li>为保证您实验报酬的顺利发放，请如实填写信息（学号与手机号后 4 位仅用于报酬发放对账）。</li>
-            <li>为保证数据质量与您的体验，请在安静、光线适宜的环境中完成，并尽量使用电脑全屏模式。</li>
-            <li>实验中如出现不适或需暂停时，可随时退出并联系主试；您拥有随时退出的权利，并严格遵守下述保密原则。</li>
-            <li>若您对实验过程中有任何疑问，均可在实验结束后添加主试微信咨询。</li>
-          </ul>
+<!-- ========== ★ 预阶段（不嵌套 UI） ========== -->
+<div id="preStage" aria-label="预阶段">
+    <!-- ★ 预阶段粒子画布 -->
+  <canvas id="preFxCanvas" aria-hidden="true"></canvas>
+  <!-- Notice -->
+  <section id="notice" class="screen active">
+    <div class="panel" role="region" aria-label="实验注意事项">
+      <article class="nz-card" style="width:min(980px,92%); text-align:left;">
+        <header class="nz-head" style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <span class="nz-badge" style="font-size:18px;background:linear-gradient(180deg,var(--acc-2),var(--acc)); color:#062438; padding:4px 10px; border-radius:999px; font-weight:800">NOTICE</span>
+          <h1 class="nz-title" style="margin:0;font-size:22px">欢迎参加体型调整实验</h1>
+        </header>
+        <section class="nz-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="nz-pane" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:14px">
+            <h2 style="margin:0 0 8px 0;font-size:22px;text-align:center">实验背景</h2>
+            <ul style="margin:8px 0 0 0;padding-left:18px;line-height:1.7;font-size:20px">
+              <li>本次实验邀请到了各学院不同专业的学生大概200名，在前期实验中大家共同参与了体型感知实验的基线测验任务。今天的正式实验任务将会由所有前期参与活动人员共同在本次实验所创建的“实验网络社区”内完成，社区内会有正在完成实验同学的实时状态公布，以及已完成同学的体验分享，当然您的实验过程也同样会在“实验网络社区”内发布。</li>
+            </ul>
+          </div>
+          <div class="nz-pane" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:14px">
+            <h2 style="margin:0 0 8px 0;font-size:22px;text-align:center">保密原则</h2>
+            <ul style="margin:8px 0 0 0;padding-left:18px;line-height:1.7;font-size:20px">
+             <li><b>匿名处理：</b>实验记录不包含可直接识别身份的信息；公开报告仅呈现汇总统计。</li>
+             <li><b>限制用途：</b>数据仅用于科学研究与学术发表，不作商业用途。</li>
+             <li><b>安全存储：</b>数据存放于受控研究账号云端，访问、传输采用加密通道保护。</li>
+             <li><b>自愿参与：</b>实验遵循自愿原则，若您有不适，可随时退出实验。</li>
+             <li><b>绝不外传：</b>为避免干扰他人参与，请勿在研究完成前公开讨论题目或传播页面内容。</li>
+            </ul>
+          </div>
+        </section>
+        <div class="nz-actions" style="display:flex;gap:10px;align-items:center;justify-content:space-between;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:10px;margin-top:12px">
+          <div class="nz-ck" style="display:flex;align-items:center;gap:8px">
+            <input id="agree" type="checkbox" aria-label="我已阅读并同意注意事项与保密条款" style="width:22px;height:22px;border-radius:6px;border:2px solid rgba(255,255,255,.28);background:transparent">
+            <label for="agree">我已阅读并同意注意事项与保密条款</label>
+          </div>
+          <div class="bar" aria-hidden="true" style="width:240px;height:12px">
+            <span id="noticePg" style="width:0%"></span>
+          </div>
+          <button id="btnNoticeNext" class="btn" disabled>我已阅读，进入实验</button>
         </div>
+      </article>
+    </div>
+  </section>
 
-        <!-- 右：保密原则 -->
-        <div class="nz-pane">
-          <h2>保密原则</h2>
-          <ul>
-            <li><b>匿名处理：</b>实验记录以编码形式保存，不包含可直接识别身份的信息；公开报告仅呈现汇总统计。</li>
-            <li><b>限用途：</b>数据仅用于本课题的科学研究与学术发表，不作商业用途。</li>
-            <li><b>安全存储：</b>数据存放于受控研究账号云端，访问受权限保护；传输采用加密通道。</li>
-            <li><b>自愿参与：</b>可在任何阶段撤回；撤回后可请求删除未分析的数据。</li>
-            <li><b>不外传：</b>为避免干扰他人参与，请勿在研究完成前公开讨论题目或传播页面内容。</li>
-          </ul>
-        </div>
-      </section>
-
-      <div class="nz-actions">
-        <div class="nz-ck">
-          <input id="agree" type="checkbox" aria-label="我已阅读并同意注意事项与保密条款">
-          <label for="agree">我已阅读并同意注意事项与保密条款</label>
-        </div>
-
-        <!-- 注意：此进度条在点击按钮后才会从 0 → 100% -->
-        <div class="bar" aria-hidden="true" style="width:240px;height:15px">
-          <span id="noticePg" style="width:0%"></span>
-        </div>
-
-        <button id="btnNoticeNext" class="btn" disabled>我已阅读，进入实验</button>
+  <!-- 指导语（首页） -->
+  <section id="guidelines" class="screen">
+    <div class="panel">
+       <h1>欢迎您参加本实验！</h1>
+       <p>实验中，您将通过"F"键与"J"键来对呈现的体型胖瘦进行调整，直到符合相应体型。</p>
+       <p>您可以通过长按或点击"F"键与"J"键来进行快速或精细的调整，</p>
+       <p>调整完成后，按“回车键（Enter）”确认选择。</p>
+       <p style="margin-top:6px">请选择您的性别</p>
+      <div>
+        <input id="studentId" placeholder="请输入学号" />
+        <input id="subjectNumber" placeholder="请输手机号码后4位" />
       </div>
-    </article>
-  </div>
-</section>
-
-<!-- 指导语（首页） -->
-<section id="guidelines" class="screen">
-  <div class="panel">
-    <h1>欢迎您参加本实验！</h1>
-    <p>实验中，您将通过"F"键与"J"键来对呈现的体型胖瘦进行调整，直到符合相应体型。</p>
-    <p>您可以通过长按或点击"F"键与"J"键来进行快速或精细的调整，</p>
-    <p>调整完成后，按“回车键（Enter）”确认选择。</p>
-    <p style="margin-top:6px">请选择您的性别</p>
-    <div>
-      <input id="studentId" placeholder="请输入学号" />
-      <input id="subjectNumber" placeholder="请输手机号码后4位" />
+      <div>
+        <button id="maleButton" class="btn">男性</button>
+        <button id="femaleButton" class="btn">女性</button>
+      </div>
+      <div class="bar" style="margin-top:8px"><span id="preloadPg"></span></div>
+      <p id="preloadTip" style="color:var(--muted);font-size:14px">等待选择性别开始预加载…</p>
+      <button id="btnStartPractice" class="btn" disabled>进入练习</button>
+      <p style="color:var(--muted);font-size:12px">注：学号与手机号后4位将用于编码与报酬对账。</p>
     </div>
-    <div>
-      <button id="maleButton" class="btn">男性</button>
-      <button id="femaleButton" class="btn">女性</button>
-    </div>
-    <div class="bar" style="margin-top:10px"><span id="preloadPg"></span></div>
-    <p id="preloadTip" class="muted">等待选择性别开始预加载…</p>
-    <button id="btnStartPractice" class="btn" disabled>进入练习</button>
-    <p class="muted">请您耐心等待实验加载，若长时间未加载完成，可点击性别进行刷新或重新进入实验！</p>
-    <p class="muted">注：请准确填写学号与手机号后4位，这将作为实验编码，以便发放报酬。</p>
-  </div>
-</section>
+  </section>
 
-<!-- 练习/正式指导语 -->
-<section id="practiceGuidelines" class="screen">
-  <div class="panel">
-    <p>练习阶段（共 3 次）！</p>
+  <!-- 练习指导语 -->
+  <section id="practiceGuidelines" class="screen">
+    <div class="panel">
+      <p>练习阶段（共 3 次）！</p>
     <p>您可以通过‘长按’ “F” 与 “J” 键，来进行体型的 ‘快速’ 调整，</p>
     <p>或通过‘点击’ “F” 与 “J” 键来对体型进行‘精细’ 调整。</p>
     <p>若您已经了解具体操作，按 <b>空格键</b> 开始练习！</p>
+    </div>
+  </section>
+
+  <!-- ★ 练习阶段呈现主机位（不嵌套 UI） -->
+  <div id="practiceHost" aria-label="练习呈现层">
+    <img id="pStimulus" alt="practice stimulus" decoding="async" loading="eager" fetchpriority="high">
+    <div id="pFixation">+</div>
+    <div id="pHintL" class="hint hint-left">长按“F”变瘦</div>
+    <div id="pHintR" class="hint hint-right">长按“J”变胖</div>
+    <div id="pPracticePrompt" style="color:#cfe8ff;display:none">
+      熟悉后可按 <b>Enter</b> 结束本次练习
+    </div>
   </div>
-</section>
 
-<section id="currentGuidelines" class="screen">
-  <div class="panel">
-    <p>正式实验开始！</p>
-    <p>“当前体型”调整任务（共10 次）！</p>
-    <p>现在，您将通过"F"键与"J"键来调整出最接近您当前的体型。</p>
-    <p>按“回车键（Enter）”确认保存调整结果，按“空格键”正式开始实验。</p>
+  <!-- ★ 新增：练习结束后的指导与加载页（含磨砂玻璃文本框） -->
+  <section id="postPractice" class="screen">
+    <div class="panel">
+      <h1 style="margin:6px 0 8px 0">准备进入正式实验</h1>
+     <div class="loader" aria-hidden="true"></div>
+      <!-- 磨砂玻璃文本框：用于放指导语 -->
+      <div class="glass-note" role="note" aria-label="正式阶段操作提醒">
+        <h3>进入正式实验前，您需完成以下任务</h3>
+        <ul>
+          恭喜您您已经完成练习部分，接下来会有短暂加载联网阶段(2-3分钟)，加载完成后将正式进入“实验网络社区”平台。
+          此段时间需要您拿起刚刚完成的书写任务内容进行阅读并尽力回忆这三件事的场景，
+          在接下来的调整任务中也请您带着这一情绪状态进行。下面请您开始阅读并回忆......
+        </ul>
+      </div>
+
+      <p style="color:var(--muted)">我们正在整理练习数据并准备正式阶段，请稍候…</p>
+     
+      <div class="bar" style="width:min(900px,78%);margin-top:10px">
+        <span id="postPg" style="width:0%"></span>
+      </div>
+      <p id="postTip" style="color:var(--muted);font-size:14px;margin-top:6px">资源准备中…</p>
+      <button id="btnPostGo" class="btn" disabled>“空格键”开始正式实验</button>
+    </div>
+  </section>
+</div>
+<!-- ========== 预阶段结束 ========== -->
+
+<div class="app" id="communityApp">
+  <!-- 顶部 -->
+  <header class="wb-header">
+    <div class="wb-inner">
+      <div class="wb-left">
+        <div class="brand" title="实验社区">
+          <svg width="28" height="28" viewBox="0 0 48 48" aria-hidden="true">
+            <defs><linearGradient id="g" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#35c9ff"/><stop offset=".8" stop-color="#22d3ee"/></linearGradient></defs>
+            <rect x="2" y="2" rx="10" ry="10" width="44" height="44" fill="url(#g)"/>
+            <path d="M16 18c4-3 12-3 16 0M18 18c-2 6 0 10 6 12M30 18c2 6 0 10-6 12" fill="none" stroke="#061724" stroke-width="2.6" stroke-linecap="round"/>
+            <circle cx="24" cy="24" r="2.6" fill="#061724"/>
+          </svg>
+          <span>实验社区</span>
+        </div>
+        <div class="wb-search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 21l-4.3-4.3" stroke="#b9cfe2" stroke-width="2" stroke-linecap="round"/></svg>
+          <input placeholder="搜索阶段、话题或体验分享…" aria-label="搜索">
+        </div>
+      </div>
+      <nav class="wb-center" aria-label="主菜单">
+        <div class="wb-tab active"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-6v-6H10v6H4a1 1 0 0 1-1-1v-10.5Z" stroke="#bfe6ff" stroke-width="1.6" stroke-linejoin="round"/></svg><span>首页</span></div>
+        <div class="wb-tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.9 4 4.4.6-3.2 3.2.8 4.5-3.9-2.1-3.9 2.1.8-4.5L5.7 6.6 10.1 6 12 2Z" stroke="#e5f2ff" stroke-width="1.6" stroke-linejoin="round"/></svg><span>热榜</span></div>
+        <div class="wb-tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.9 4 4.4.6-3.2 3.2.8 4.5-3.9-2.1-3.9 2.1.8-4.5L5.7 6.6 10.1 6 12 2Z" stroke="#e5f2ff" stroke-width="1.6" stroke-linejoin="round"/></svg><span>视频</span></div>
+        <div class="wb-tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#e5f2ff" stroke-width="1.6"/><path d="M6 7h12v2H6zM6 11h6v2H6z" fill="#e5f2ff"/></svg><span>私信</span></div>
+      </nav>
+      <div class="wb-right">
+        <div class="wb-icon" title="云"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 18h11a4 4 0 0 0 0-8h-.3A6 6 0 1 0 6 18Z" stroke="#e5f2ff" stroke-width="1.6"/></svg></div>
+        <div class="wb-icon" title="设置"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="#e5f2ff" stroke-width="1.6"/><path d="M19 12a7 7 0 0 1-.2 1.7l2 1.5-2 3.4-2.3-1a7 7 0 0 1-2.6 1.5l-.3 2.5H12l-.6 2.5a7 7 0 0 1-2.6-1.5l-2.3 1-2-3.4 2-1.5A7 7 0  0 1 5 12c0-.6.1-1.1.2-1.7l-2-1.5 2-3.4 2.3 1a7 7 0 0 1 2.6-1.5L11.4 2h1.2l.6 2.5a7 7 0 0 1 2.6 1.5l2.3-1 2 3.4-2 1.5c(.1).6.2 1.1.2 1.7Z" stroke="#cfe6ff" stroke-width="1.2"/></svg></div>
+        <button class="wb-post">发布</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主体 -->
+  <div class="layout">
+    <!-- 左侧 -->
+    <aside class="panel nav">
+      <div class="sec">导航</div>
+      <a class="active" href="#"><span class="ico">🏠</span> 首页</a>
+      <a href="#"><span class="ico">📖</span> 活动规则</a>
+      <a href="#"><span class="ico">🏆</span> 排行榜</a>
+      <div style="height:8px"></div>
+      <div class="sec">热门话题</div>
+      <div class="tags">
+        <a class="tag" href="#">我的体型故事</a>
+        <a class="tag" href="#">理想目标</a>
+        <a class="tag" href="#">展示舞台</a>
+      </div>
+      <div class="status" style="margin-top:auto">
+        <div class="sec">在线（实时）</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin:4px 6px 8px">
+          <span style="font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:999px;color:var(--muted)">当前在线 <span id="onlineLeft">—</span></span>
+        </div>
+        <div class="avatars" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:8px 4px">
+          <div class="avatar"><div class="img" style="width:44px;height:44px;border-radius:50%;background:#1a2534 center/cover no-repeat;border:1px solid #2e3f52;background-image:url('https://picsum.photos/seed/a/80')"></div><label style="font-size:12px;color:var(--muted)">20224011021_1533</label></div>
+          <div class="avatar"><div class="img" style="width:44px;height:44px;border-radius:50%;background:#1a2534 center/cover no-repeat;border:1px solid #2e3f52;background-image:url('https://picsum.photos/seed/b/80')"></div><label style="font-size:12px;color:var(--muted)">20234015023_7893</label></div>
+          <div class="avatar"><div class="img" style="width:44px;height:44px;border-radius:50%;background:#1a2534 center/cover no-repeat;border:1px solid #2e3f52;background-image:url('https://picsum.photos/seed/c/80')"></div><label style="font-size:12px;color:var(--muted)">20244402321_7547</label></div>
+          <div class="avatar"><div class="img" style="width:44px;height:44px;border-radius:50%;background:#1a2534 center/cover no-repeat;border:1px solid #2e3f52;background-image:url('https://picsum.photos/seed/d/80')"></div><label style="font-size:12px;color:var(--muted)">20224005003_7746</label></div>
+          <div class="avatar"><div class="img" style="width:44px;height:44px;border-radius:50%;background:#1a2534 center/cover no-repeat;border:1px solid #2e3f52;background-image:url('https://picsum.photos/seed/e/80')"></div><label style="font-size:12px;color:var(--muted)">20244521024_0021</label></div>
+          <div class="avatar"><div class="img" style="width:44px;height:44px;border-radius:50%;background:#1a2534 center/cover no-repeat;border:1px solid #2e3f52;background-image:url('https://picsum.photos/seed/f/80')"></div><label style="font-size:12px;color:var(--muted)">20234021011_1963</label></div>
+          <div class="avatar"><div class="img" style="width:44px;height:44px;border-radius:50%;background:#1a2534 center/cover no-repeat;border:1px solid #2e3f52;background-image:url('https://picsum.photos/seed/g/80')"></div><label style="font-size:12px;color:var(--muted)">20234001029_1569</label></div>
+          <div class="avatar"><div class="img" style="width:44px;height:44px;border-radius:50%;background:#1a2534 center/cover no-repeat;border:1px solid #2e3f52;background-image:url('https://picsum.photos/seed/h/80')"></div><label style="font-size:12px;color:var(--muted)">20234061025_1234</label></div>
+          <div class="avatar"><div class="img" style="width:44px;height:44px;border-radius:50%;background:#1a2534 center/cover no-repeat;border:1px solid #2e3f52;background-image:url('https://picsum.photos/seed/i/80')"></div><label style="font-size:12px;color:var(--muted)">20244011001_1532</label></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 中栏：发布栏 / 视口 / 实时动态 -->
+    <main class="panel main">
+
+      <section class="main-tip" aria-label="提示标题">
+        <div class="title">🔵您正在公开展示情景，实时调整过程将公示在社区公示窗</div>
+      </section>
+
+      <!-- 实验嵌套 -->
+      <section class="viewport" aria-label="体型调整实验视口">
+        <div class="center-note" id="note" style="display:none">
+          <div>
+           <p>正式实验开始！</p>
+           <p>“当前体型”调整任务（共10 次）！</p>
+           <p>现在，您将通过"F"键与"J"键来调整出最接近您当前的体型。</p>
+           <p>按“回车键（Enter）”确认保存调整结果，按“空格键”正式开始实验。</p>
+          </div>
+        </div>
+
+        <!-- ✅ 实验主机位 -->
+        <div id="expHost">
+          <canvas id="fxCanvas" aria-hidden="true"></canvas>
+
+          <section id="currentGuidelines" class="screen">
+            <div class="panel">
+             <p>正式实验开始！</p>
+           <p>“当前体型”调整任务（共10 次）！</p>
+           <p>现在，您将通过"F"键与"J"键来调整出最接近您当前的体型。</p>
+           <p>按“回车键（Enter）”确认保存调整结果，按“空格键”正式开始实验。</p>
+            </div>
+          </section>
+
+          <section id="idealGuidelines" class="screen">
+            <div class="panel">
+             <p>“理想体型”调整任务（共10 次）！</p>
+             <p>现在，您将通过"F"键与"J"键来调整您的理想体型。</p>
+             <p>按“回车键（Enter）”确认保存调整结果，按“空格键”开始实验。</p>
+            </div>
+          </section>
+
+          <img id="stimulus" alt="stimulus" decoding="async" loading="eager" fetchpriority="high">
+          <div id="fixation">+</div>
+          <div class="hint hint-left">长按“F”变瘦</div>
+          <div class="hint hint-right">长按“J”变胖</div>
+          <div id="currentTypeLabel"><p>调至与您<b>当前最相近</b>的体型，按 <b>Enter</b>。</p></div>
+          <div id="idealTypeLabel"><p>调至您的<b>理想体型</b>，按 <b>Enter</b>。</p></div>
+          <div id="practicePrompt" style="color:#cfe8ff;display:none">熟悉后可按 <b>Enter</b> 结束本次练习</div>
+
+          <section id="thankYou" class="screen">
+            <div class="panel">
+              <p>请备注学号与手机号后4位，添加主试微信领取报酬。</p>
+              <p>按 “ESC” 关闭页面。</p>
+              <h1>实验结束，感谢参与！</h1>
+            </div>
+          </section>
+
+          <div id="overlayUploading" style="display:none;background:rgba(0,0,0,.55);color:#fff;z-index:9;align-items:center;justify-content:center;flex-direction:column;">
+            <div style="font-size:16px;margin-bottom:8px">正在上传数据，请稍候…</div>
+            <div class="bar" style="width:260px;height:12px"><span style="width:100%"></span></div>
+          </div>
+          <div id="overlayFailed" style="display:none;background:rgba(0,0,0,.60);color:#fff;z-index:9;align-items:center;justify-content:center;flex-direction:column;">
+            <div style="font-size:16px;margin-bottom:10px">上传失败，请检查网络后重试</div>
+            <button id="btnRetryUpload" class="btn">重试上传</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="ticker" aria-live="polite">
+        <ul id="tickerList"></ul>
+      </div>
+    </main>
+
+    <!-- 右侧面板 -->
+    <aside class="panel aside">
+      <section class="card">
+        <div class="subject">
+          <div class="big-av" id="subjectAvatar" style="background-image:url('https://picsum.photos/seed/subject/120')"></div>
+          <div class="meta">
+            <span class="pill">正在调整</span>
+            <span class="id" id="subjectId">20234018028-2724</span>
+          </div>
+        </div>
+      </section>
+      <section class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-weight:600">正在参与者</div>
+          <span class="pill">公示窗</span>
+        </div>
+        <div class="peers-grid" id="peers"></div>
+      </section>
+      <section class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-weight:600">我的调整公示</div>
+          <span class="pill" id="selfStage">当前体型</span>
+        </div>
+        <div class="self-vp"><img id="selfImg" alt="我的实时预览" loading="lazy" decoding="async"></div>
+        <div class="progress">
+          <div class="label"><span id="taskStage">当前体型</span><span id="taskCount">0/10</span></div>
+          <div class="bar"><span id="taskBar"></span></div>
+        </div>
+
+        <div class="composer" aria-label="发布栏（侧栏）" style="margin-top:10px">
+          <div class="composer-top">
+            <textarea class="composer-input" rows="2" placeholder="分享此刻的想法…"></textarea>
+          </div>
+          <div class="composer-bottom">
+            <div class="composer-actions">
+              <div class="act" title="表情">
+                <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#9fd6ff" stroke-width="1.6"/><path d="M8 10h.01M16 10h.01M8 14.5c1.2 1 2.5 1.5 4 1.5s2.8-.5 4-1.5" stroke="#9fd6ff" stroke-width="1.6" stroke-linecap="round"/></svg>
+                <span>表情</span>
+              </div>
+              <div class="act" title="图片">
+                <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="#9fd6ff" stroke-width="1.6"/><circle cx="9" cy="10" r="2" fill="#9fd6ff"/><path d="M5 18l5-5 3 3 3-3 3 3" stroke="#9fd6ff" stroke-width="1.6" stroke-linecap="round"/></svg>
+                <span>图片</span>
+              </div>
+              <div class="act" title="更多">
+                <svg viewBox="0 0 24 24" fill="none"><circle cx="6" cy="12" r="2" fill="#9fd6ff"/><circle cx="12" cy="12" r="2" fill="#9fd6ff"/><circle cx="18" cy="12" r="2" fill="#9fd6ff"/></svg>
+                <span>更多</span>
+              </div>
+            </div>
+            <div class="composer-right">
+              <div class="divider"></div>
+              <div class="privacy">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="#9fd6ff" stroke-width="1.6"/><path d="M12 8v5l3 2" stroke="#9fd6ff" stroke-width="1.6" stroke-linecap="round"/></svg>
+                <select aria-label="可见范围">
+                  <option>公开</option><option>社团</option><option>私密</option>
+                </select>
+              </div>
+              <button class="send">发送</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </aside>
+
   </div>
-</section>
-
-<section id="idealGuidelines" class="screen">
-  <div class="panel">
-    <p>“理想体型”调整任务（共10 次）！</p>
-    <p>现在，您将通过"F"键与"J"键来调整您的理想体型。</p>
-    <p>按“回车键（Enter）”确认保存调整结果，按“空格键”开始实验。</p>
-  </div>
-</section>
-
-<!-- 刺激层 -->
-<img id="stimulus" alt="stimulus" decoding="async" loading="eager" fetchpriority="high">
-<div id="fixation">+</div>
-<div class="hint hint-left">长按“F”快速变瘦</div>
-<div class="hint hint-right">长按“J”快速变胖</div>
-<div id="currentTypeLabel"><p>调至与您<b>当前最相近</b>的体型，按 <b>Enter</b> 确认。</p></div>
-<div id="idealTypeLabel"><p>调至您的<b>理想体型</b>，按 <b>Enter</b> 确认。</p></div>
-<div id="practicePrompt" class="muted">熟悉后可按 <b>Enter</b> 结束本次练习</div>
-
-<!-- 结束页与遮罩 -->
-<section id="thankYou" class="screen">
-  <div class="panel">
-    <p>请您备注好学号与手机号码后4位后，添加实验主试微信领取实验报酬！！！</p>
-    <p>按下“ESC”后，关闭当前页面即可。</p>
-    <h1>实验结束，感谢参与！</h1>
-  </div>
-</section>
-
-<div id="overlayUploading" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);color:#fff;z-index:9999;align-items:center;justify-content:center;flex-direction:column;">
-  <div style="font-size:20px;margin-bottom:10px">正在上传数据，请稍候…</div>
-  <div class="bar" style="width:300px"><span style="width:100%"></span></div>
 </div>
 
-<div id="overlayFailed" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);color:#fff;z-index:9999;align-items:center;justify-content:center;flex-direction:column;">
-  <div style="font-size:20px;margin-bottom:12px">上传失败，请检查网络后重试</div>
-  <button id="btnRetryUpload" class="btn">重试上传</button>
-</div>
-
-<!-- COS SDK -->
+<!-- COS SDK（供实验上传） -->
 <script src="https://cdn.jsdelivr.net/npm/cos-js-sdk-v5/dist/cos-js-sdk-v5.min.js"></script>
 
 <script>
+/* ========== 左栏在线人数 / 右侧公示窗 ========== */
+(function(){const left=document.getElementById('onlineLeft');let n=11; const set=v=>left.textContent=v+' 人'; set(n); setInterval(()=>{ n=Math.max(5,n+(Math.random()>.5?1:-1)); set(n); }, 3000);})();
+(function(){
+  const peers=document.getElementById('peers');
+  const names=['20224011021_1533','20234015023_7893','20224005003_7746','20244402321_7547','20244521024_0021','20234021011_1963','20234001029_1569','20234061025_1234','20244011001_1532','20244021022_7532','20234031031_1332','20234031021_3312'];
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+  /* —— 使用与正式实验一致的体型序列资源 —— */
+  const IS_PROD = location.hostname.endsWith('github.io');
+  const SITE_BASE = IS_PROD ? 'https://BodyImageLab.github.io/body-shape-experiment_xiaowu/' : './';
+  const BASE_URL_F = SITE_BASE + 'img_F/';
+  const BASE_URL_M = SITE_BASE + 'img_M/';
+  const MAX_F = 76, MAX_M = 76; const F_EXT='png', M_EXT='png';
+  const imgURL = (series, idx)=> (series==='M' ? (BASE_URL_M + 'M' + (idx+1) + '.' + M_EXT) : (BASE_URL_F + 'F' + (idx+1) + '.' + F_EXT));
+
+  /* —— 生成卡片：默认“正在调整…”，并在进度环中心放头像 —— */
+  for(let i=0;i<6;i++){
+    const card=document.createElement('div'); card.className='peer';
+
+    // 随机性别与初始索引（围绕序列中段更自然）
+    const series = Math.random()>.5 ? 'F' : 'M';
+    const max = series==='M'?MAX_M:MAX_F;
+    const startIdx = Math.max(0, Math.min(max-1, Math.floor(max*0.25 + Math.random()*max*0.5)));
+    const dir = Math.random()>.5 ? 1 : -1;
+
+    // 固定头像（不闪烁）
+    const avSeed = Math.floor(Math.random()*1000);
+    const avatarURL = `https://picsum.photos/seed/av-${avSeed}/60/60`;
+
+    // 卡片 DOM
+    card.innerHTML=`
+      <div class="peer-vp">
+        <img alt="参与者预览">
+        <div class="ring" style="--p:0"><span class="av" style="background-image:url('${avatarURL}')"></span></div>
+      </div>
+      <div class="peer-meta"><span class="n">${pick(names)}</span><span class="t">正在调整…</span></div>`;
+
+    // 记录状态
+    const vpImg = card.querySelector('img');
+    card.dataset.series = series;
+    card.dataset.idx = String(startIdx);
+    card.dataset.dir = String(dir);
+    card.dataset.p = (Math.random()*0.2).toFixed(3);
+    if(i>0) card.dataset.forceAdjust = '1'; // 非第一张强制保持“正在调整…”
+
+    // 初始显示体型图
+    vpImg.src = imgURL(series, startIdx);
+
+    peers.appendChild(card);
+  }
+
+  const cards=[...peers.children];
+
+  /* ★★★ 进度环——非常慢推进（除第一张由主流程控制外） */
+  setInterval(()=>{
+    cards.forEach((card)=>{
+      if (card.dataset && card.dataset.locked==='1') return; // 第一张由主流程驱动
+      let p = parseFloat(card.dataset.p||'0');
+      const step = 0.0008 + Math.random()*0.0012; // 慢速推进
+      p = Math.min(0.985, p + step);
+      card.dataset.p = p.toFixed(3);
+      const ring = card.querySelector('.ring'); if(ring) ring.style.setProperty('--p', p);
+      const t = card.querySelector('.t'); if (t && card.dataset.forceAdjust==='1') t.textContent='正在调整…';
+    });
+  }, 3600);
+
+  /* ★★★ 模拟体型“轻微调整”：小步进、来回缓动（不更换头像，不用随机照片） */
+  setInterval(()=>{
+    cards.forEach((card, i)=>{
+      if (card.dataset && card.dataset.locked==='1') return; // 第一张交由主流程
+      const series = card.dataset.series||'F';
+      const max = series==='M'?MAX_M:MAX_F;
+      let idx = parseInt(card.dataset.idx||'0',10);
+      let dir = parseInt(card.dataset.dir||'1',10);
+
+      // 以 1 步为主，偶尔 2 步；到边界反弹；并在中段随机换向，避免机械感
+      const delta = (Math.random()<0.12 ? 2 : 1) * dir;
+      idx += delta;
+      if (idx<=0 || idx>=max-1) { dir = -dir; idx = Math.max(0, Math.min(max-1, idx)); }
+      else if (Math.random()<0.06) { dir = -dir; }
+
+      card.dataset.idx = String(idx);
+      card.dataset.dir = String(dir);
+
+      const img = card.querySelector('img');
+      if (img) img.src = imgURL(series, idx);
+
+      const t = card.querySelector('.t');
+      if (t && card.dataset.forceAdjust==='1') t.textContent='正在调整…';
+    });
+  }, 1400); // 约 1.4 秒一小步，细腻且不突兀
+})();
+(function(){
+  const idEl = document.getElementById('subjectId');
+  const avEl = document.getElementById('subjectAvatar');
+  const subjectCode = '20234018028-2724';
+  idEl.textContent = subjectCode;
+  avEl.style.backgroundImage = "url('https://picsum.photos/seed/subject-"+subjectCode+"/120')";
+})();
+/* —— 删除原本“自我预览/进度”的演示轮播，改由正式实验实时驱动 —— */
+
+(function(){
+  const ul=document.getElementById('tickerList');
+  ['✅ 20224011021_1533 刚刚完成了实验 · 公示已生成',
+   '✅ 20234015023_7893 完成“理想体型”调整 · 公开可见',
+   '✅ 20224005003_7746 提交数据成功 · 差值≈2',
+   '✅ 20244402321_7547 完成“当前体型”调整 · 进入后续',
+   '✅ 20244521024_0021 结束实验 · 感谢参与'].forEach(m=>{
+     const li=document.createElement('li'); li.innerHTML=`<span class="dot"></span><span>${m}</span>`; ul.appendChild(li);
+   });
+  setInterval(()=>{
+    if(ul.children.length<=1) return;
+    ul.style.transition='transform .45s ease';
+    ul.style.transform='translateY(-52px)';
+    setTimeout(()=>{ ul.style.transition='none'; ul.appendChild(ul.children[0]); ul.style.transform='translateY(0)'; }, 480);
+  }, 2600);
+})();
+
+/* ========== 实验脚本 ========== */
+{
 /* ===== 常量 ===== */
 const STS_URL    = 'https://bodyshape2025-8gk5msghc2121838-1373390636.ap-shanghai.app.tcloudbase.com/cos-sts-event';
 const COS_BUCKET = 'bodyshape-data-1373390636';
@@ -339,31 +954,35 @@ const FIX_MS = 800;
 const HOLD_INTERVAL = 70;
 
 /* ===== DOM/状态 ===== */
+const exp = document.getElementById('expHost');
+function $(id){ return document.getElementById(id); }
+
 const screens = {
-  notice: document.getElementById('notice'),
-  guide: document.getElementById('guidelines'),
-  pracG: document.getElementById('practiceGuidelines'),
-  currG: document.getElementById('currentGuidelines'),
-  idealG: document.getElementById('idealGuidelines'),
-  thank: document.getElementById('thankYou')
+  notice: $('notice'),
+  guide: $('guidelines'),
+  pracG: $('practiceGuidelines'),
+  postG: $('postPractice'),        // ★ 新增：练习结束过渡页
+  currG: $('currentGuidelines'),
+  idealG: $('idealGuidelines'),
+  thank: $('thankYou')
 };
-const preloadPg = document.getElementById('preloadPg');
-const preloadTip = document.getElementById('preloadTip');
-const btnStartPractice = document.getElementById('btnStartPractice');
-const maleBtn = document.getElementById('maleButton');
-const femaleBtn = document.getElementById('femaleButton');
-const btnNoticeNext = document.getElementById('btnNoticeNext');
+const preloadPg = $('preloadPg');
+const preloadTip = $('preloadTip');
+const btnStartPractice = $('btnStartPractice');
+const maleBtn = $('maleButton');
+const femaleBtn = $('femaleButton');
+const btnNoticeNext = $('btnNoticeNext');
 
-const stimulus = document.getElementById('stimulus');
-const fixation = document.getElementById('fixation');
-const hintL = document.querySelector('.hint-left');
-const hintR = document.querySelector('.hint-right');
-const labelCurrent = document.getElementById('currentTypeLabel');
-const labelIdeal = document.getElementById('idealTypeLabel');
-const practicePrompt = document.getElementById('practicePrompt');
+const stimulus = $('stimulus');
+const fixation = $('fixation');
+const hintL = exp.querySelector('.hint-left');
+const hintR = exp.querySelector('.hint-right');
+const labelCurrent = $('currentTypeLabel');
+const labelIdeal = $('idealTypeLabel');
+const practicePrompt = $('practicePrompt');
 
-const studentIdEl = document.getElementById('studentId');
-const subjectNumberEl = document.getElementById('subjectNumber');
+const studentIdEl = $('studentId');
+const subjectNumberEl = $('subjectNumber');
 
 let gender = null, series = 'F', imgList = [];
 let idx = 0, holdTimer = null, holdKey = null, adjusting = false, preloaded = false;
@@ -375,73 +994,97 @@ let results = [];
 let sessionId = null;
 let pendingIndex = null;
 
-/* ===== Notice：同意后按钮可用；按按钮先跑进度条再进入下一页 ===== */
-const agree = document.getElementById('agree');
-const noticePg = document.getElementById('noticePg');
+/* ★★★ 新增：练习阶段 DOM（在 preStage 内） ★★★ */
+const pHost = $('practiceHost');
+const pStimulus = $('pStimulus');
+const pFixation = $('pFixation');
+const pHintL = $('pHintL');
+const pHintR = $('pHintR');
+const pPracticePrompt = $('pPracticePrompt');
 
-if (agree && btnNoticeNext){
-  btnNoticeNext.disabled = !agree.checked;
-  agree.addEventListener('change', ()=> btnNoticeNext.disabled = !agree.checked);
+/* ★★★ 新增：Host 选择器与开关 ★★★ */
+function elStim(){ return (taskType==='练习') ? pStimulus : stimulus; }
+function elFix(){ return (taskType==='练习') ? pFixation : fixation; }
+function elHintLeft(){ return (taskType==='练习') ? pHintL : hintL; }
+function elHintRight(){ return (taskType==='练习') ? pHintR : hintR; }
+function elPracticePrompt(){ return (taskType==='练习') ? pPracticePrompt : practicePrompt; }
+function usePracticeHost(on){ if(pHost){ pHost.style.display = on ? 'block' : 'none'; } }
 
-  btnNoticeNext.addEventListener('click', async ()=>{
-    if(btnNoticeNext.disabled) return;
+/* ===== 同意页：按钮可点与进度 ===== */
+const agree = $('agree');
+const noticePg = $('noticePg');
 
-    // 禁用按钮，跑进度动画
-    btnNoticeNext.disabled = true;
-    await runNoticeProgress();
-
-    // ✅ 进入实验前先请求全屏（有用户点击手势，最可靠）
-  enterFullscreen();
-
-    // 进度完毕后进入下一页（FX 会随 showScreen 自动切换）
-    showScreen('guide');
-  });
-}
-
-/* 进度条动画：点击按钮后从 0 → 100% */
 function runNoticeProgress(){
   return new Promise(resolve=>{
     let w = 0;
-    noticePg.style.width = '0%';
+    noticePg && (noticePg.style.width = '0%');
     const timer = setInterval(()=>{
-      w += 12 + Math.random()*18; // 速度可按需调整
+      w += 12 + Math.random()*18;
       if (w >= 100){
-        w = 100;
-        clearInterval(timer);
-        resolve();
+        w = 100; clearInterval(timer); resolve();
       }
-      noticePg.style.width = w.toFixed(0) + '%';
+      noticePg && (noticePg.style.width = w.toFixed(0) + '%');
     }, 120);
   });
 }
 
-/* ===== 通用粒子 & 涟漪（可按需选择在哪些页面启用） ===== */
+if (agree && btnNoticeNext){
+  function syncAgree(){
+    const ok = !!agree.checked;
+    btnNoticeNext.disabled = !ok;
+    btnNoticeNext.setAttribute('aria-disabled', String(!ok));
+  }
+  ['change','input','click','keyup'].forEach(ev => agree.addEventListener(ev, syncAgree));
+  window.addEventListener('load', syncAgree);
 
-/** 👇 在这里控制粒子背景在哪些“页面键”启用。
- *  页面键是 showScreen(key) 里用的 key：
- *  notice / guide / pracG / currG / idealG / thank
- *  想关闭某页，就把相应 key 从集合里删掉即可。
- */
-const FX_PAGES = new Set(['notice','guide','thank']);
+  btnNoticeNext.addEventListener('click', async (e)=>{
+    if (btnNoticeNext.disabled) return;
+    btnNoticeNext.disabled = true;
+    await runNoticeProgress();
+    enterFullscreen();
+    showScreen('guide');
+  });
+}
+
+/* ===== 背景粒子（按页面选择画布：预阶段用 preFxCanvas，社区阶段用 fxCanvas） ===== */
+const FX_PAGES = new Set([
+  'notice',          // 启动页（预阶段）
+  'guide',           // 指导语（预阶段）
+  'postG',           // 练习结束过渡页（预阶段）
+  'thank'            // 感谢页（社区）
+]);
 
 let bgFX = null;
-function mountFX(){
-  if (bgFX) return;
-  const cvs = document.getElementById('fxCanvas');
+
+function mountFX(screenKey){
+  // 每次切换页面时，销毁旧实例，重新针对当前容器挂载
+  if (bgFX) bgFX.destroy();
+
+  const isPreStage = (screenKey === 'notice' || screenKey === 'guide' || screenKey === 'pracG' || screenKey === 'postG');
+  const container  = isPreStage ? document.getElementById('preStage') : document.getElementById('expHost');
+  const cvs        = isPreStage ? document.getElementById('preFxCanvas') : document.getElementById('fxCanvas');
+
+  if (!container || !cvs) return;
+
   const ctx = cvs.getContext('2d');
   const DPR = Math.min(2, window.devicePixelRatio || 1);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let W=0,H=0,t=0, mx=0,my=0, rafId=null, bubbles=[];
+  let W=0, H=0, t=0, rafId=null, bubbles=[];
 
   function resize(){
-    W = cvs.width  = innerWidth  * DPR;
-    H = cvs.height = innerHeight * DPR;
-    cvs.style.width  = innerWidth + 'px';
-    cvs.style.height = innerHeight + 'px';
+    const rect = container.getBoundingClientRect();
+    // 防止 0 宽高
+    const w = Math.max(1, rect.width);
+    const h = Math.max(1, rect.height);
+    cvs.width  = w * DPR;
+    cvs.height = h * DPR;
+    cvs.style.width  = w + 'px';
+    cvs.style.height = h + 'px';
+    W=cvs.width; H=cvs.height;
     init();
   }
   function init(){
-    const n = reduce ? 40 : 90;
+    const n = reduce ? 30 : 70;
     bubbles.length = 0;
     for(let i=0;i<n;i++){
       const z = Math.random();
@@ -449,100 +1092,59 @@ function mountFX(){
       const x = Math.random()*W;
       const y = Math.random()*H;
       const vy = (-.2 - 1.2*z) * DPR;
-      const hue = 40 + 15*z;
+      const hue = 200 + 20*z;
       bubbles.push({x,y,r,vy,z,hue,tw:Math.random()*Math.PI*2});
     }
   }
   function draw(){
     t += 0.005;
     ctx.clearRect(0,0,W,H);
-    const grad = ctx.createLinearGradient(0,0,W,H);
-    grad.addColorStop(0,'rgba(0,0,0,.08)');
-    grad.addColorStop(1,'rgba(0,0,0,.20)');
-    ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
-
     for(const b of bubbles){
-      const ox = (mx*0.06)*(1-b.z)*DPR;
-      const oy = (my*0.04)*(1-b.z)*DPR;
       b.y += b.vy*(.7 + .3*Math.sin(b.tw + t*2));
       if (b.y + b.r < 0) { b.y = H + b.r; b.x = Math.random()*W; }
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      const g = ctx.createRadialGradient(b.x+ox, b.y+oy, b.r*0.1, b.x+ox, b.y+oy, b.r);
-      g.addColorStop(0, `hsla(${b.hue},85%,70%,.45)`);
-      g.addColorStop(.6, `hsla(${b.hue+10},85%,65%,.12)`);
+      const g = ctx.createRadialGradient(b.x, b.y, b.r*0.1, b.x, b.y, b.r);
+      g.addColorStop(0, `hsla(${b.hue},85%,70%,.35)`);
+      g.addColorStop(.6, `hsla(${b.hue+10},85%,65%,.10)`);
       g.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x+ox, b.y+oy, b.r, 0, Math.PI*2); ctx.fill();
-      ctx.globalCompositeOperation = 'screen';
-      ctx.fillStyle = `hsla(${b.hue+20},100%,85%,.35)`;
-      ctx.beginPath(); ctx.arc(b.x+ox - b.r*0.3, b.y+oy - b.r*0.3, b.r*0.25, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
       ctx.restore();
     }
     rafId = requestAnimationFrame(draw);
   }
+
   const onResize = ()=>resize();
-  const onMove   = (e)=>{ mx = (e.clientX / innerWidth  - .5) * 2; my = (e.clientY / innerHeight - .5) * 2; };
-
-  // 水波涟漪：只在启用 FX 的页面内的按钮上
-  const onClick = (e)=>{
-    // 用 section id 选择（注意：这里用的是 DOM id，不是 key）
-    const btn = e.target.closest('#notice .btn, #guidelines .btn, #thankYou .btn');
-    if(!btn) return;
-    const rip = document.createElement('span');
-    rip.style.position='absolute';
-    rip.style.borderRadius='50%';
-    rip.style.transform='translate(-50%,-50%) scale(0)';
-    rip.style.background='rgba(255,255,255,.55)';
-    rip.style.pointerEvents='none';
-    rip.style.left = (e.clientX - btn.getBoundingClientRect().left) + 'px';
-    rip.style.top  = (e.clientY - btn.getBoundingClientRect().top)  + 'px';
-    const size = Math.max(btn.offsetWidth, btn.offsetHeight);
-    rip.style.width = rip.style.height = size + 'px';
-    rip.style.transition='transform .6s ease-out, opacity .6s ease-out';
-    btn.appendChild(rip);
-    requestAnimationFrame(()=>{ rip.style.transform='translate(-50%,-50%) scale(18)'; rip.style.opacity='0'; });
-    rip.addEventListener('transitionend', ()=> rip.remove());
-  };
-
   window.addEventListener('resize', onResize);
-  window.addEventListener('mousemove', onMove, {passive:true});
-  document.addEventListener('click', onClick);
-
-  resize(); if(!reduce){ draw(); }
+  resize();
+  if(!reduce){ draw(); }
 
   bgFX = {
     destroy(){
       if (rafId) cancelAnimationFrame(rafId);
       window.removeEventListener('resize', onResize);
-      window.removeEventListener('mousemove', onMove, {passive:true});
-      document.removeEventListener('click', onClick);
-      const c = document.getElementById('fxCanvas');
-      if (c){ const ctx2=c.getContext('2d'); ctx2 && ctx2.clearRect(0,0,c.width,c.height); }
+      const k = cvs.getContext('2d'); if (k) k.clearRect(0,0,cvs.width,cvs.height);
       bgFX = null;
     }
   };
 }
+
 function unmountFX(){ if (bgFX) bgFX.destroy(); }
 
-/* 根据当前屏的 key 决定是否启用粒子 */
 function maybeToggleFXFor(screenKey){
-  if (FX_PAGES.has(screenKey)) mountFX(); else unmountFX();
+  if (FX_PAGES.has(screenKey)) mountFX(screenKey);
+  else unmountFX();
 }
+
 
 /* ===== 工具函数 ===== */
 function enterFullscreen(){ const el=document.documentElement; if (el.requestFullscreen) el.requestFullscreen().catch(()=>{}); }
-
-/* 切屏：统一在这里控制 FX 的开关 */
 function showScreen(key){
-  Object.values(screens).forEach(s=>s.classList.remove('active'));
-  screens[key].classList.add('active');
+  Object.values(screens).forEach(s=>s && s.classList.remove('active'));
+  screens[key] && screens[key].classList.add('active');
   maybeToggleFXFor(key);
 }
-
-/* 初始化：根据默认 active 的屏决定是否开启 FX */
-{
-  const activeKey = Object.entries(screens).find(([k,el])=>el.classList.contains('active'))?.[0] || 'notice';
-  maybeToggleFXFor(activeKey);
-}
+const activeKey = Object.entries(screens).find(([k,el])=>el && el.classList.contains('active'))?.[0] || 'notice';
+maybeToggleFXFor(activeKey);
 
 /* ===== 预加载 ===== */
 function genNames(prefix, n, ext){ const a=[]; for (let i=1;i<=n;i++) a.push(`${prefix}${i}.${ext}`); return a; }
@@ -554,7 +1156,7 @@ function getSeriesURLs(which){
 async function preloadAll(urls){
   if (!urls.length) return;
   let done = 0, total = urls.length;
-  const upd = ()=>{ preloadPg.style.width = ((done/total)*100).toFixed(1) + '%'; };
+  const upd = ()=>{ if(preloadPg) preloadPg.style.width = ((done/total)*100).toFixed(1) + '%'; };
   for (const u of urls) {
     const im = new Image(); im.loading='eager'; im.decoding='async'; im.src=u;
     try { await im.decode(); } catch(e) {}
@@ -568,24 +1170,88 @@ function bmiFromIndex(series, index){
   else { return +(11.8 + index * 0.472).toFixed(2); }
 }
 
-/* ===== 呈现/索引 ===== */
-function updateStimulus(){
-  idx = clamp(idx, 0, imgList.length-1);
-  stimulus.src = imgList[idx];
-  stimulus.style.display = 'block';
-  if (taskType === '练习'){
-    hintL.style.display='block'; hintR.style.display='block';
-    practicePrompt.style.display=(practiceTrial < PRACTICE_TRIALS)?'block':'none';
-    labelCurrent.style.opacity=0; labelIdeal.style.opacity=0;
-  } else {
-    hintL.style.display='none'; hintR.style.display='none';
-    practicePrompt.style.display='none';
-    labelCurrent.style.opacity=(taskType==='当前体型')?1:0;
-    labelIdeal.style.opacity=(taskType==='理想体型')?1:0;
+/* ===== 右侧联动：自我预览 & 公示窗“进行中” ===== */
+function updateSelfPanel(){
+  const stageEl = $('taskStage');
+  const pillStageEl = $('selfStage');
+  const countEl = $('taskCount');
+  const barEl = $('taskBar');
+  let total=0, done=0, stageText = taskType;
+
+  if (taskType==='当前体型'){ total = 10; done = currentTrial; }
+  else if (taskType==='理想体型'){ total = 10; done = idealTrial; }
+  else { total = PRACTICE_TRIALS; done = practiceTrial; }
+
+  stageEl && (stageEl.textContent = stageText);
+  pillStageEl && (pillStageEl.textContent = stageText);
+  countEl && (countEl.textContent = done + '/' + total);
+  barEl && (barEl.style.width = (total ? (done/total)*100 : 0) + '%');
+
+  if (taskType!=='练习'){
+    const imgEl = $('selfImg');
+    const src = elStim().src;
+    if (imgEl && src) imgEl.src = src;
+  }
+
+  const peers = $('peers'); if(peers && peers.children.length){
+    const card = peers.children[0];
+    const ring = card.querySelector('.ring');
+    if (ring){
+      const p = total ? (done/total) : 0;
+      ring.style.setProperty('--p', p);
+    }
   }
 }
-function showFix(){ stimulus.style.display='none'; labelCurrent.style.opacity=0; labelIdeal.style.opacity=0; hintL.style.display='none'; hintR.style.display='none'; practicePrompt.style.display='none'; fixation.style.display='block'; }
-function hideFix(){ fixation.style.display='none'; }
+function lockSelfPeerCard(){
+  const peers = $('peers'); if(!peers || !peers.children.length) return;
+  const card = peers.children[0]; card.dataset.locked = '1';
+  const img = card.querySelector('img');
+  const n = card.querySelector('.n');
+  const t = card.querySelector('.t');
+  if (img && elStim().src) img.src = elStim().src;
+  const myId = $('subjectId')?.textContent || '我';
+  if (n) n.textContent = myId;
+  if (t) t.textContent = '正在调整…';
+}
+function unlockSelfPeerCard(){
+  const peers = $('peers'); if(!peers || !peers.children.length) return;
+  const card = peers.children[0]; if(card.dataset) delete card.dataset.locked;
+  const t = card.querySelector('.t'); if (t) t.textContent = '已确认';
+}
+
+/* ===== 呈现/索引（区分练习/正式） ===== */
+function updateStimulus(){
+  idx = clamp(idx, 0, imgList.length-1);
+  const S = elStim();
+  S.src = imgList[idx];
+  S.style.display = 'block';
+
+  if (taskType === '练习'){
+    elHintLeft().style.display = 'block';
+    elHintRight().style.display = 'block';
+    elPracticePrompt().style.display = (practiceTrial < PRACTICE_TRIALS) ? 'block' : 'none';
+    labelCurrent.style.opacity = 0;
+    labelIdeal.style.opacity = 0;
+  } else {
+    elHintLeft().style.display = 'none';
+    elHintRight().style.display = 'none';
+    elPracticePrompt().style.display = 'none';
+    labelCurrent.style.opacity = (taskType==='当前体型') ? 1 : 0;
+    labelIdeal.style.opacity   = (taskType==='理想体型') ? 1 : 0;
+  }
+
+  if (taskType!=='练习'){ updateSelfPanel(); lockSelfPeerCard(); }
+}
+function showFix(){
+  elStim().style.display = 'none';
+  labelCurrent.style.opacity = 0;
+  labelIdeal.style.opacity = 0;
+  elHintLeft().style.display = 'none';
+  elHintRight().style.display = 'none';
+  elPracticePrompt().style.display = 'none';
+  elFix().style.display = 'block';
+}
+function hideFix(){ elFix().style.display = 'none'; }
 
 /* ===== 记录 ===== */
 function saveRow(){
@@ -598,8 +1264,8 @@ function saveRow(){
     start_index: startIdx,
     response_time: new Date().toISOString(),
     response_duration_ms: Date.now() - t0,
-    student_id: (studentIdEl.value||'').trim(),
-    subject_number: (subjectNumberEl.value||'').trim(),
+    student_id: (studentIdEl?.value||'').trim(),
+    subject_number: (subjectNumberEl?.value||'').trim(),
     gender
   });
 }
@@ -609,25 +1275,33 @@ function startHold(which){ stopHold(); const delta=(which==='f')?-1:+1; step(del
 function stopHold(){ if (holdTimer){ clearInterval(holdTimer); holdTimer=null; } holdKey=null; }
 function step(delta){ if (!adjusting) return; idx = clamp(idx + delta, 0, imgList.length-1); pendingIndex = idx; }
 
-/* ===== 渲染循环（切图更顺滑） ===== */
-function renderLoop(){ if (pendingIndex !== null){ stimulus.src = imgList[pendingIndex]; pendingIndex = null; } requestAnimationFrame(renderLoop); }
+/* ===== 渲染循环 ===== */
+function renderLoop(){
+  if (pendingIndex !== null){
+    elStim().src = imgList[pendingIndex];
+    if (taskType!=='练习'){ updateSelfPanel(); lockSelfPeerCard(); }
+    pendingIndex = null;
+  }
+  requestAnimationFrame(renderLoop);
+}
 renderLoop();
 
 /* ===== 覆盖层控制 ===== */
-function showUploadingOverlay(){ document.getElementById('overlayUploading').style.display='flex'; }
-function hideUploadingOverlay(){ document.getElementById('overlayUploading').style.display='none'; }
+function showUploadingOverlay(){ const el=document.getElementById('overlayUploading'); el && (el.style.display='flex'); }
+function hideUploadingOverlay(){ const el=document.getElementById('overlayUploading'); el && (el.style.display='none'); }
 function showUploadFailedOverlay(msg){
-  const el = document.getElementById('overlayFailed'); el.style.display='flex';
-  document.getElementById('btnRetryUpload').onclick = async ()=>{
-    el.style.display='none'; showUploadingOverlay();
-    try{ await uploadAllResults(); hideUploadingOverlay(); showScreen('thank'); }
+  const el = document.getElementById('overlayFailed'); if(!el) return;
+  el.style.display='flex';
+  const btn = document.getElementById('btnRetryUpload');
+  if(btn){ btn.onclick = async ()=>{ el.style.display='none'; showUploadingOverlay();
+    try{ await uploadAllResults(); hideUploadingOverlay(); showScreen('thank'); unlockSelfPeerCard(); }
     catch(e){ hideUploadingOverlay(); showUploadFailedOverlay(String(e)); }
-  };
+  }; }
 }
 
-/* ===== 整场 payload / 上传 ===== */
+/* ===== 上传 ===== */
 function buildPayload(){
-  return { sessionId, pid: (studentIdEl.value||'').trim(), subjectNumber: (subjectNumberEl.value||'').trim(), gender, rows: results };
+  return { sessionId, pid: (studentIdEl?.value||'').trim(), subjectNumber: (subjectNumberEl?.value||'').trim(), gender, rows: results };
 }
 async function uploadAllResults(){
   const payload = buildPayload();
@@ -652,28 +1326,39 @@ async function uploadAllResults(){
 }
 
 /* ===== 流程控制 ===== */
-function startPracticeBlock(){ taskType='练习'; practiceTrial=0; showScreen('pracG'); }
+function startPracticeBlock(){ taskType='练习'; practiceTrial=0; usePracticeHost(false); showScreen('pracG'); updateSelfPanel(); }
 function startCurrentBlock(){
+  usePracticeHost(false);
+
+  const pre = document.getElementById('preStage');
+  const app = document.getElementById('communityApp');
+  if (pre) pre.style.display = 'none';
+  if (app) app.style.display = 'grid';
+
   taskType='当前体型'; currentTrial=0;
   currentStarts = Array(5).fill(0).concat(Array(5).fill(imgList.length-1)).sort(()=>Math.random()-0.5);
   showScreen('currG');
+  updateSelfPanel();
 }
 function startIdealBlock(){
   taskType='理想体型'; idealTrial=0;
   idealStarts = Array(5).fill(0).concat(Array(5).fill(imgList.length-1)).sort(()=>Math.random()-0.5);
   showScreen('idealG');
+  updateSelfPanel();
 }
 function startTrial(){
   adjusting = true;
   document.body.classList.add('hide-cursor');
-  stimulus.style.display='block';
-  if (taskType==='练习'){
+
+  if (taskType === '练习'){
+    usePracticeHost(true);
     idx = Math.floor(Math.random()*imgList.length);
-  } else if (taskType==='当前体型'){
+  } else if (taskType === '当前体型'){
     idx = currentStarts[currentTrial];
-  } else if (taskType==='理想体型'){
+  } else if (taskType === '理想体型'){
     idx = idealStarts[idealTrial];
   }
+  elStim().style.display='block';
   startIdx = idx;
   updateStimulus();
   t0 = Date.now();
@@ -684,22 +1369,53 @@ async function chooseGender(g){
   gender = (g==='M') ? 'Male' : 'Female';
   series = (g==='M') ? 'M' : 'F';
   enterFullscreen();
-  preloadTip.textContent = `已选择：${gender==='Male'?'男性':'女性'}，开始预加载…`;
+  preloadTip && (preloadTip.textContent = `已选择：${gender==='Male'?'男性':'女性'}，开始预加载…`);
   imgList = getSeriesURLs(series);
-  btnStartPractice.disabled = true;
+  btnStartPractice && (btnStartPractice.disabled = true);
   await preloadAll(imgList);
   preloaded = true;
-  preloadTip.textContent = '预加载完成。现在可以进入练习。';
-  btnStartPractice.disabled = false;
+  preloadTip && (preloadTip.textContent = '预加载完成。现在可以进入练习。');
+  btnStartPractice && (btnStartPractice.disabled = false);
 }
 
-/* ===== 事件绑定 ===== */
-if (maleBtn)   maleBtn.addEventListener('click', ()=>chooseGender('M'));
-if (femaleBtn) femaleBtn.addEventListener('click', ()=>chooseGender('F'));
+/* ===== 新增：练习结束过渡页逻辑 ===== */
+const postPg   = $('postPg');
+const postTip  = $('postTip');
+const btnPostGo = $('btnPostGo');
 
-btnStartPractice.addEventListener('click', ()=>{
+function showPostPracticeGuide(){
+  usePracticeHost(false);
+  showScreen('postG');
+
+  if (postPg)  postPg.style.width = '0%';
+  if (postTip) postTip.textContent = '资源准备中…';
+  if (btnPostGo) btnPostGo.disabled = true;
+
+  let w = 0;
+  const timer = setInterval(()=>{
+    w += 3 + Math.random()*4;
+    if (w >= 100){
+      w = 100;
+      clearInterval(timer);
+      if (postPg)  postPg.style.width = '100%';
+      if (postTip) postTip.textContent = '准备就绪，按空格或点击继续';
+      if (btnPostGo) btnPostGo.disabled = false;
+    }else{
+      if (postPg) postPg.style.width = w.toFixed(0) + '%';
+    }
+  }, 200);
+}
+btnPostGo && btnPostGo.addEventListener('click', ()=>{
+  if (!btnPostGo.disabled) startCurrentBlock();
+});
+
+/* ===== 事件绑定 ===== */
+maleBtn && maleBtn.addEventListener('click', ()=>chooseGender('M'));
+femaleBtn && femaleBtn.addEventListener('click', ()=>chooseGender('F'));
+
+btnStartPractice && btnStartPractice.addEventListener('click', ()=>{
   if (!preloaded){ alert('请先等待预加载完成'); return; }
-  if (!(studentIdEl.value && subjectNumberEl.value)){ alert('请先填写学号与被试序号'); return; }
+  if (!(studentIdEl?.value && subjectNumberEl?.value)){ alert('请先填写学号与被试序号'); return; }
   const d=new Date(), p=n=>(n<10?'0':'')+n;
   const ts = d.getFullYear()+''+p(d.getMonth()+1)+p(d.getDate())+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds());
   sessionId = `${ts}_${(studentIdEl.value||'').trim()}_${(subjectNumberEl.value||'').trim()}`;
@@ -707,13 +1423,13 @@ btnStartPractice.addEventListener('click', ()=>{
   startPracticeBlock();
 });
 
-/* ===== 键盘交互 ===== */
 window.addEventListener('keydown',(e)=>{
   const k = e.key.toLowerCase();
   if (!adjusting){
-    if (screens.pracG.classList.contains('active') && k===' '){ Object.values(screens).forEach(s=>s.classList.remove('active')); startTrial(); return; }
-    if (screens.currG.classList.contains('active') && k===' '){ Object.values(screens).forEach(s=>s.classList.remove('active')); labelCurrent.style.opacity=1; startTrial(); return; }
-    if (screens.idealG.classList.contains('active') && k===' '){ Object.values(screens).forEach(s=>s.classList.remove('active')); labelIdeal.style.opacity=1; startTrial(); return; }
+    if (screens.pracG.classList.contains('active') && k===' '){ Object.values(screens).forEach(s=>s && s.classList.remove('active')); startTrial(); return; }
+    if (screens.postG.classList.contains('active') && k===' '){ startCurrentBlock(); return; } // ★ 过渡页空格进入正式
+    if (screens.currG.classList.contains('active') && k===' '){ Object.values(screens).forEach(s=>s && s.classList.remove('active')); labelCurrent.style.opacity=1; startTrial(); return; }
+    if (screens.idealG.classList.contains('active') && k===' '){ Object.values(screens).forEach(s=>s && s.classList.remove('active')); labelIdeal.style.opacity=1; startTrial(); return; }
   }
   if (adjusting){
     if (k==='f' || k==='j'){ if (holdKey!==k) startHold(k); }
@@ -726,19 +1442,19 @@ window.addEventListener('keydown',(e)=>{
         if (taskType==='练习'){
           practiceTrial++;
           if (practiceTrial < PRACTICE_TRIALS) startTrial();
-          else startCurrentBlock();
+          else showPostPracticeGuide();         // ★ 练习结束→过渡页
         } else if (taskType==='当前体型'){
-          currentTrial++;
+          currentTrial++; updateSelfPanel();
           if (currentTrial < CURRENT_TRIALS) startTrial();
           else startIdealBlock();
         } else if (taskType==='理想体型'){
-          idealTrial++;
+          idealTrial++; updateSelfPanel();
           if (idealTrial < IDEAL_TRIALS) startTrial();
           else {
-            stimulus.style.display='none';
+            elStim().style.display='none';
             document.body.classList.remove('hide-cursor');
             showUploadingOverlay();
-            try{ await uploadAllResults(); hideUploadingOverlay(); showScreen('thank'); }
+            try{ await uploadAllResults(); hideUploadingOverlay(); showScreen('thank'); unlockSelfPeerCard(); }
             catch(err){ hideUploadingOverlay(); console.error('Upload failed:', err); showUploadFailedOverlay((err && err.message) ? err.message : String(err)); }
           }
         }
@@ -749,7 +1465,8 @@ window.addEventListener('keydown',(e)=>{
 window.addEventListener('keyup',(e)=>{ const k = e.key.toLowerCase(); if (k==='f' || k==='j') stopHold(); if (k==='enter') enterLocked = false; });
 
 /* 初始提示 */
-preloadTip.textContent = '等待选择性别开始预加载…';
+preloadTip && (preloadTip.textContent = '等待选择性别开始预加载…');
+}
 </script>
 </body>
 </html>

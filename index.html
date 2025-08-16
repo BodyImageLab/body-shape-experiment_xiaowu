@@ -242,6 +242,9 @@
   #expHost #fxCanvas{position:absolute; inset:0; z-index:0; pointer-events:none}
   #overlayUploading, #overlayFailed{position:absolute !important; inset:0 !important;}
 
+  /* === 新增：隐藏感谢页面的UI嵌套 === */
+  #expHost #thankYou .panel{ display:none !important; }
+
   /* —— 修复点击：避免进度条挡住按钮，保证按钮在最上层 —— */
   #preStage{ z-index:9999; pointer-events:auto; }
   #preStage .nz-actions{ position:relative; z-index:3; }
@@ -483,6 +486,54 @@ aside.panel.nav .status .avatars .avatar label{
   z-index:0;
   pointer-events:none;
 }
+/* 右侧：用纵向 flex，把多余高度分摊到两处间距里 */
+.aside{
+  display: flex;              /* 覆盖原来的 grid */
+  flex-direction: column;
+  justify-content: space-between;              /* 把剩余高度分配到间距 */
+  gap: clamp(12px, 2.5vh, 28px);               /* 最小间距随高度适配，12~28px */
+}
+
+/* 防止内部把卡片撑开，按内容高度排布即可 */
+.aside .card{ flex: 0 0 auto; }
+
+/* 中间“正在参与者”列表需要滚动时不把卡片顶高 */
+.aside .peers-grid{
+  max-height: 100%;
+  overflow: auto;
+  min-height: 0;
+}
+
+/* 第三块里预览区域按容器自适应，不再额外撑高 */
+.aside .self-vp{ min-height: 0; }
+.aside .self-vp img{ width:100%; height:100%; object-fit:contain; }
+/* 右侧公示窗：把“正在调整…”放到编码上方，左对齐显示 */
+.peers-grid .peer .peer-meta{
+  display: flex;               /* 改为纵向排列 */
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;                    /* 上下间距 */
+  margin-top: 6px;             /* 保留原外边距 */
+}
+
+.peers-grid .peer .peer-meta .t{
+  order: -1;                   /* 放到编码(.n)的前面 */
+  display: inline-block !important;  /* 覆盖你先前的 display:none */
+  font-size: 11px;
+  line-height: 1.2;
+  color: #9fb7c9;
+  opacity: .95;
+  /* 可选：做成小胶囊标签 */
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+}
+
+.peers-grid .peer .peer-meta .n{
+  font-weight: 600;
+}
+
 
 </style>
 </head>
@@ -608,18 +659,17 @@ aside.panel.nav .status .avatars .avatar label{
   <header class="wb-header">
     <div class="wb-inner">
       <div class="wb-left">
-        <div class="brand" title="实验社区">
-          <svg width="28" height="28" viewBox="0 0 48 48" aria-hidden="true">
+        <div class="brand" title="实验网络社区">
+          <svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true">
             <defs><linearGradient id="g" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#35c9ff"/><stop offset=".8" stop-color="#22d3ee"/></linearGradient></defs>
             <rect x="2" y="2" rx="10" ry="10" width="44" height="44" fill="url(#g)"/>
             <path d="M16 18c4-3 12-3 16 0M18 18c-2 6 0 10 6 12M30 18c2 6 0 10-6 12" fill="none" stroke="#061724" stroke-width="2.6" stroke-linecap="round"/>
             <circle cx="24" cy="24" r="2.6" fill="#061724"/>
           </svg>
-          <span>实验社区</span>
+          <span>实验网络社区   Experimental Network Community</span>
         </div>
         <div class="wb-search">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 21l-4.3-4.3" stroke="#b9cfe2" stroke-width="2" stroke-linecap="round"/></svg>
-          <input placeholder="搜索阶段、话题或体验分享…" aria-label="搜索">
+         
         </div>
       </div>
       <nav class="wb-center" aria-label="主菜单">
@@ -630,8 +680,8 @@ aside.panel.nav .status .avatars .avatar label{
       </nav>
       <div class="wb-right">
         <div class="wb-icon" title="云"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 18h11a4 4 0 0 0 0-8h-.3A6 6 0 1 0 6 18Z" stroke="#e5f2ff" stroke-width="1.6"/></svg></div>
-        <div class="wb-icon" title="设置"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="#e5f2ff" stroke-width="1.6"/><path d="M19 12a7 7 0 0 1-.2 1.7l2 1.5-2 3.4-2.3-1a7 7 0 0 1-2.6 1.5l-.3 2.5H12l-.6 2.5a7 7 0 0 1-2.6-1.5l-2.3 1-2-3.4 2-1.5A7 7 0  0 1 5 12c0-.6.1-1.1.2-1.7l-2-1.5 2-3.4 2.3 1a7 7 0 0 1 2.6-1.5L11.4 2h1.2l.6 2.5a7 7 0 0 1 2.6 1.5l2.3-1 2 3.4-2 1.5c(.1).6.2 1.1.2 1.7Z" stroke="#cfe6ff" stroke-width="1.2"/></svg></div>
-        <button class="wb-post">发布</button>
+        <div class="wb-icon" title="设置"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="#e5f2ff" stroke-width="1.6"/><path d="M19 12a7 7 0 0 1-.2 1.7l2 1.5-2 3.4-2.3-1a7 7 0 0 1-2.6 1.5l-.3 2.5H12l-.6 2.5a7 7 0 0 1-2.6-1.5l-2.3 1-2-3.4 2-1.5A7 7 0  0 1 5 12c0-.6.1-1.1.2-1.7l-2-1.5 2-3.4 2.3 1a7 7 0 0 1 2.6-1.5L11.4 2h1.2l.6 2.5a7 7 0  0 1 2.6 1.5l2.3-1 2 3.4-2 1.5c(.1).6.2 1.1.2 1.7Z" stroke="#cfe6ff" stroke-width="1.2"/></svg></div>
+        
       </div>
     </div>
   </header>
@@ -643,7 +693,6 @@ aside.panel.nav .status .avatars .avatar label{
       <div class="sec">导航</div>
       <a class="active" href="#"><span class="ico">🏠</span> 首页</a>
       <a href="#"><span class="ico">📖</span> 活动规则</a>
-      <a href="#"><span class="ico">🏆</span> 排行榜</a>
       <div style="height:8px"></div>
       <div class="sec">热门话题</div>
       <div class="tags">
@@ -770,35 +819,7 @@ aside.panel.nav .status .avatars .avatar label{
           <div class="bar"><span id="taskBar"></span></div>
         </div>
 
-        <div class="composer" aria-label="发布栏（侧栏）" style="margin-top:10px">
-          <div class="composer-top">
-            <textarea class="composer-input" rows="2" placeholder="分享此刻的想法…"></textarea>
-          </div>
-          <div class="composer-bottom">
-            <div class="composer-actions">
-              <div class="act" title="表情">
-                <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#9fd6ff" stroke-width="1.6"/><path d="M8 10h.01M16 10h.01M8 14.5c1.2 1 2.5 1.5 4 1.5s2.8-.5 4-1.5" stroke="#9fd6ff" stroke-width="1.6" stroke-linecap="round"/></svg>
-                <span>表情</span>
-              </div>
-              <div class="act" title="图片">
-                <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="#9fd6ff" stroke-width="1.6"/><circle cx="9" cy="10" r="2" fill="#9fd6ff"/><path d="M5 18l5-5 3 3 3-3 3 3" stroke="#9fd6ff" stroke-width="1.6" stroke-linecap="round"/></svg>
-                <span>图片</span>
-              </div>
-              <div class="act" title="更多">
-                <svg viewBox="0 0 24 24" fill="none"><circle cx="6" cy="12" r="2" fill="#9fd6ff"/><circle cx="12" cy="12" r="2" fill="#9fd6ff"/><circle cx="18" cy="12" r="2" fill="#9fd6ff"/></svg>
-                <span>更多</span>
-              </div>
-            </div>
-            <div class="composer-right">
-              <div class="divider"></div>
-              <div class="privacy">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="#9fd6ff" stroke-width="1.6"/><path d="M12 8v5l3 2" stroke="#9fd6ff" stroke-width="1.6" stroke-linecap="round"/></svg>
-                <select aria-label="可见范围">
-                  <option>公开</option><option>社团</option><option>私密</option>
-                </select>
-              </div>
-              <button class="send">发送</button>
-            </div>
+            
           </div>
         </div>
       </section>
@@ -903,13 +924,7 @@ aside.panel.nav .status .avatars .avatar label{
     });
   }, 1400); // 约 1.4 秒一小步，细腻且不突兀
 })();
-(function(){
-  const idEl = document.getElementById('subjectId');
-  const avEl = document.getElementById('subjectAvatar');
-  const subjectCode = '20234018028-2724';
-  idEl.textContent = subjectCode;
-  avEl.style.backgroundImage = "url('https://picsum.photos/seed/subject-"+subjectCode+"/120')";
-})();
+
 /* —— 删除原本“自我预览/进度”的演示轮播，改由正式实验实时驱动 —— */
 
 (function(){
@@ -981,8 +996,34 @@ const labelCurrent = $('currentTypeLabel');
 const labelIdeal = $('idealTypeLabel');
 const practicePrompt = $('practicePrompt');
 
-const studentIdEl = $('studentId');
+const studentIdEl     = $('studentId');
 const subjectNumberEl = $('subjectNumber');
+
+// === 新增：根据输入拼出“学号_尾号”，并实时更新右侧栏 ===
+function buildSubjectCode(){
+  const sidRaw  = (studentIdEl?.value || '').trim().replace(/\D/g, '');
+  const telRaw  = (subjectNumberEl?.value || '').trim().replace(/\D/g, '');
+  const telTail = telRaw.slice(-4);
+  if (!sidRaw || !telTail) return '——';
+  return `${sidRaw}_${telTail}`;
+}
+
+function syncSubjectHeader(){
+  const code = buildSubjectCode();
+  const idEl = document.getElementById('subjectId');
+  const avEl = document.getElementById('subjectAvatar');
+  if (idEl) idEl.textContent = code;
+  if (avEl) {
+    avEl.style.backgroundImage =
+      `url('https://picsum.photos/seed/subject-${encodeURIComponent(code)}/120')`;
+  }
+}
+
+// 输入时实时刷新
+studentIdEl     && studentIdEl.addEventListener('input',  syncSubjectHeader);
+subjectNumberEl && subjectNumberEl.addEventListener('input', syncSubjectHeader);
+syncSubjectHeader(); // 初始化一次
+// === 新增结束 ===
 
 let gender = null, series = 'F', imgList = [];
 let idx = 0, holdTimer = null, holdKey = null, adjusting = false, preloaded = false;
@@ -1143,6 +1184,35 @@ function showScreen(key){
   screens[key] && screens[key].classList.add('active');
   maybeToggleFXFor(key);
 }
+/* 放在你现有的工具函数附近（有 enterFullscreen 的位置） */
+
+function isFullscreen() {
+  return !!(document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.msFullscreenElement);
+}
+
+function toggleFullscreen(el = document.documentElement) {
+  if (isFullscreen()) {
+    (document.exitFullscreen ||
+     document.webkitExitFullscreen ||
+     document.msExitFullscreen)?.call(document);
+  } else {
+    (el.requestFullscreen ||
+     el.webkitRequestFullscreen ||
+     el.msRequestFullscreen)?.call(el).catch?.(()=>{});
+  }
+}
+
+/* 全局热键：F10 切换全屏（不与 F/J/Enter/Space 冲突） */
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'F10') {
+    e.preventDefault();
+    e.stopPropagation();   // 防止冒泡影响其他逻辑
+    toggleFullscreen();
+  }
+});
+
 const activeKey = Object.entries(screens).find(([k,el])=>el && el.classList.contains('active'))?.[0] || 'notice';
 maybeToggleFXFor(activeKey);
 

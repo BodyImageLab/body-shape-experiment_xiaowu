@@ -422,6 +422,9 @@
     </div>
   </div>
 
+<!-- ✅ 新增：COS SDK，用于覆盖上传到相同 Key -->
+<script src="https://cdn.jsdelivr.net/npm/cos-js-sdk-v5/dist/cos-js-sdk-v5.min.js"></script>
+
 <script>
 // ✅ 是否被嵌在 iframe 中（实验页里）
 const IS_EMBEDDED = (window.top !== window.self);
@@ -431,6 +434,10 @@ const IS_EMBEDDED = (window.top !== window.self);
 const FORM_ID = (()=>{ const d=new Date(); return 'Q-' + d.toISOString().replace(/[-:TZ.]/g,'').slice(0,14) + '-' + Math.random().toString(36).slice(2,6).toUpperCase(); })();
 const SUBMIT_ENDPOINT = '问卷联动版（前测）.HTLM';// 可填入你的后端 URL
 const DRAFT_KEY = 'survey-draft-experimentstyle-v1';
+/* ✅ 新增：与实验页一致的 COS 配置（保持不变） */
+const STS_URL    = 'https://bodyshape2025-8gk5msghc2121838-1373390636.ap-shanghai.app.tcloudbase.com/cos-sts-event';
+const COS_BUCKET = 'bodyshape-data-1373390636';
+const COS_REGION = 'ap-shanghai';
 /* ✅ 新增：实验页路径（按需改成你的实问卷联动版（前测）验 HTML 文件名或完整 URL） */
 const EXPERIMENT_PAGE = '问卷联动版（前测）.HTLM';
 /* ✅ 新增：保存最近一次实验页 URL，供第六步按钮复用 */
@@ -609,7 +616,7 @@ function validateStep(n){
       const v = Array.from(group).some(x=>x.checked);
       if(!v) ok=false;
     }else{
-      const v = ctrl.value.trim()!=='';
+      const v = ctrl.value.trim()!==''; 
       const errEl = sec.querySelector(`[data-err="${ctrl.name||ctrl.id}"]`);
       if(errEl){ errEl.style.display = v ? 'none' : 'block'; }
       if(!v) ok=false;
@@ -671,8 +678,61 @@ if(startBtn){
   startBtn.addEventListener('click', ()=> openExperiment());
 }
 
+/* ✅ 新增：把问卷与实验数据合并并覆盖上传到 COS（与实验页同桶同 Key） */
+async function mergeAndUploadToCOS(surveyData){
+  try{
+    // 1) 取实验 payload（实验页在上传成功后已写入 sessionStorage）
+    let expPayload = {};
+    try{ expPayload = JSON.parse(sessionStorage.getItem('exp_payload') || '{}'); }catch(_){}
+    // 2) 拿到上传 Key：URL 优先（实验页跳转时带 ?expKey=...），否则 sessionStorage 兜底
+    const usp = new URLSearchParams(location.search);
+    const expKeyFromUrl = usp.get('expKey') || '';
+    const expKeyFromSS  = sessionStorage.getItem('exp_uploaded_key') || '';
+    let key = expKeyFromUrl || expKeyFromSS;
+
+    // 3) 组合对象：最终文件包含“实验 + 问卷”
+    const combined = { ...expPayload, survey: surveyData };
+
+    // 4) 申请 STS 并上传（相同 Key 会覆盖）
+    const sts = await fetch(STS_URL).then(r=>r.json());
+    if(!sts.ok) throw new Error(sts.error || 'Get STS failed');
+    const cos = new COS({
+      getAuthorization: (options, cb)=> cb({
+        TmpSecretId:  sts.credentials.TmpSecretId,
+        TmpSecretKey: sts.credentials.TmpSecretKey,
+        SecurityToken: sts.credentials.Token,
+        StartTime: Math.floor(Date.now()/1000) - 1,
+        ExpiredTime: Math.floor(Date.now()/1000) + 600
+      })
+    });
+
+    // 5) 如果没拿到 expKey（极少数情况），就根据 sessionId/FORM_ID 新建一个 Key 防丢
+    if(!key){
+      const dateDir = new Date().toISOString().slice(0,10);
+      const sid = usp.get('sessionId') || expPayload.sessionId || `survey_${FORM_ID}`;
+      key = `sessions/${dateDir}/${sid}.json`;
+    }
+
+    await new Promise((resolve,reject)=>{
+      cos.putObject({
+        Bucket: COS_BUCKET, Region: COS_REGION, Key: key,
+        Body: new Blob([JSON.stringify(combined)], {type:'application/json'})
+      }, (err, data)=> err ? reject(err) : resolve(data));
+    });
+
+    try{ sessionStorage.setItem('merged_uploaded_key', key); }catch(_){}
+    console.log('Merged survey+experiment uploaded to COS:', key);
+    return key;
+  }catch(err){
+    console.error('Merge upload failed:', err);
+    // 保持页面流程正常；需要的话可提示：
+    // alert('问卷已提交，但与实验数据合并上传失败，请联系主试或稍后重试。');
+    return null;
+  }
+}
+
 // 提交
-form.addEventListener('submit', (e)=>{
+form.addEventListener('submit', async (e)=>{
   e.preventDefault(); if(!validateStep(current)) return;
   // 注意力检查：特质感恩第7题必须选 4
   const attn = form.querySelector('input[name="D7"]:checked');
@@ -707,6 +767,9 @@ form.addEventListener('submit', (e)=>{
   if(SUBMIT_ENDPOINT){
     fetch(SUBMIT_ENDPOINT,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}).catch(()=>{});
   }
+
+  // ✅ 关键一步：与实验结果合并并覆盖上传到同一个 COS Key
+  await mergeAndUploadToCOS(data);
 
   document.getElementById('download-json').onclick = ()=>{
     const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});

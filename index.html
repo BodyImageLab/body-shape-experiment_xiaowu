@@ -655,6 +655,11 @@ async function uploadAllResults(){
       Body: new Blob([JSON.stringify(payload)], { type:'application/json' })
     }, (err,data)=>err?reject(err):resolve(data));
   });
+  try {
+  sessionStorage.setItem('exp_payload', JSON.stringify(payload));
+  sessionStorage.setItem('exp_uploaded_key', key);
+} catch(_) {}
+
   console.log('Uploaded to COS:', key);
   return key;
 }
@@ -673,6 +678,9 @@ function goToSurvey(){
     startedAt: new Date(experimentStartTime || Date.now()).toISOString(),
     endedAt: new Date().toISOString()
   });
+  const expKey = sessionStorage.getItem('exp_uploaded_key') || '';
+params.set('expKey', expKey);
+
 
   const url = base + (base.includes('?') ? '&' : '?') + params.toString();
   const go = ()=> location.replace(encodeURI(url)); // 处理中文文件名

@@ -138,82 +138,96 @@
   .footer{color:var(--muted); text-align:center; font-size:12px; padding:14px}
 
   @media print{ .panel{position:relative; inset:auto; background:#fff; backdrop-filter:none} #fxCanvas, .actions, .stepper, .bar, .footer{display:none!important} .card{break-inside:avoid} body{background:#fff} }
-/* 让某个栅格项横跨两列 */
-.grid .span-2{ grid-column: 1 / -1; }
-/* 紧凑型步骤条：放在进度条下的小胶囊 */
-.stepper-compact{
-  display:flex; gap:8px; flex-wrap:wrap;
-  align-items:center; justify-content:flex-start;
-  margin-top:10px;
-}
-.stepper-compact .step{
-  flex:0 0 auto;           /* 不再等分拉伸 */
-  min-width:auto;          /* 取消 220px 最小宽度 */
-  padding:6px 10px;        /* 更小的内边距 */
-  border-radius:10px;
-  background:rgba(255,255,255,.05);
-  border:1px solid rgba(255,255,255,.10);
-}
-.stepper-compact .step i{
-  width:20px; height:20px; font-size:12px;
-}
-.stepper-compact .step div{
-  font-size:14px;
-}
-.stepper-compact .step.active{
-  border-color:#ffd86b;
-  box-shadow:0 0 0 2px rgba(242,193,78,.20);
-}
-@media (max-width:600px){
-  /* 小屏进一步压缩：只保留数字圆点，隐藏“第 X 步”文字 */
-  .stepper-compact .step div{ display:none; }
-}
+  /* 让某个栅格项横跨两列 */
+  .grid .span-2{ grid-column: 1 / -1; }
+  /* 紧凑型步骤条：放在进度条下的小胶囊 */
+  .stepper-compact{
+    display:flex; gap:8px; flex-wrap:wrap;
+    align-items:center; justify-content:flex-start;
+    margin-top:10px;
+  }
+  .stepper-compact .step{
+    flex:0 0 auto;
+    min-width:auto;
+    padding:6px 10px;
+    border-radius:10px;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.10);
+  }
+  .stepper-compact .step i{ width:20px; height:20px; font-size:12px; }
+  .stepper-compact .step div{ font-size:14px; }
+  .stepper-compact .step.active{
+    border-color:#ffd86b;
+    box-shadow:0 0 0 2px rgba(242,193,78,.20);
+  }
+  @media (max-width:600px){
+    .stepper-compact .step div{ display:none; }
+  }
   /* 圆点评分：小圆圈 + 下方文字 */
-.scale-row{ display:flex; justify-content:space-between; gap:10px; flex-wrap:nowrap; }
-.dot{
-  position:relative; display:flex; flex-direction:column; align-items:center; gap:6px;
-  width:68px;  /* 每个评分格的占位宽度，可按需调 56~72 */
-}
-.dot input{ position:absolute; inset:0; opacity:0; cursor:pointer; }
-.dot .circle{
-  width:44px; height:44px; border-radius:999px; display:grid; place-items:center;
-  border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06); font-weight:800;
-}
-.dot input:focus + .circle{ box-shadow:0 0 0 3px rgba(242,193,78,.22); border-color:var(--acc); }
-.dot input:checked + .circle{
-  background:linear-gradient(180deg,var(--acc-2),var(--acc)); color:#2b1f08;
-  border-color:transparent; box-shadow:0 8px 18px rgba(242,193,78,.15), inset 0 1px rgba(255,255,255,.35);
-}
-.dot em{
-  font-style:normal; font-size:12px; color:var(--muted); text-align:center; line-height:1.15;
-}
+  .scale-row{ display:flex; justify-content:space-between; gap:10px; flex-wrap:nowrap; }
+  .dot{
+    position:relative; display:flex; flex-direction:column; align-items:center; gap:6px;
+    width:68px;
+  }
+  .dot input{ position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .dot .circle{
+    width:44px; height:44px; border-radius:999px; display:grid; place-items:center;
+    border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06); font-weight:800;
+  }
+  .dot input:focus + .circle{ box-shadow:0 0 0 3px rgba(242,193,78,.22); border-color:var(--acc); }
+  .dot input:checked + .circle{
+    background:linear-gradient(180deg,var(--acc-2),var(--acc)); color:#2b1f08;
+    border-color:transparent; box-shadow:0 8px 18px rgba(242,193,78,.15), inset 0 1px rgba(255,255,255,.35);
+  }
+  .dot em{
+    font-style:normal; font-size:12px; color:var(--muted); text-align:center; line-height:1.15;
+  }
 
-@media (max-width:980px){
-  .dot{ width:56px }
-  .dot .circle{ width:40px; height:40px }
-  .scale-row{ gap:6px }
-}
-/* === Likert 紧凑版（小圆圈 + 小卡片） === */
-.q-list{ gap:10px; }                 /* 每题之间更紧凑 */
-.q-item{ padding:8px 10px;          /* 卡片更薄 */
-        border-radius:10px; }
-.q-text{ margin-bottom:6px;           /* 题干与评分的间距更小 */
-        line-height:1.45; }
+  @media (max-width:980px){
+    .dot{ width:56px }
+    .dot .circle{ width:40px; height:40px }
+    .scale-row{ gap:6px }
+  }
+  /* === Likert 紧凑版（小圆圈 + 小卡片） === */
+  .q-list{ gap:10px; }
+  .q-item{ padding:8px 10px; border-radius:10px; }
+  .q-text{ margin-bottom:6px; line-height:1.45; }
 
-/* 小圆圈尺寸（原：44/68） */
-.scale-row{ gap:8px; }                /* 圆圈之间的水平间距 */
-.dot{ width:72px; }                   /* 每个评分“格”的占位宽度 */
-.dot .circle{ width:32px; height:32px;/* 圆圈直径 */
-             font-size:14px; }
-.dot em{ font-size:14px; }            /* 下方文字更小一些 */
+  /* 小圆圈尺寸（原：44/68） */
+  .scale-row{ gap:8px; }
+  .dot{ width:72px; }
+  .dot .circle{ width:32px; height:32px; font-size:14px; }
+  .dot em{ font-size:14px; }
 
-/* 手机再压缩一点 */
-@media (max-width:980px){
-  .dot{ width:48px; }
-  .dot .circle{ width:32px; height:32px; font-size:13px; }
-  .scale-row{ gap:6px; }
-}
+  @media (max-width:980px){
+    .dot{ width:48px; }
+    .dot .circle{ width:32px; height:32px; font-size:13px; }
+    .scale-row{ gap:6px; }
+  }
 
+  /* 修正“民族”下拉框在弹出列表中对白底白字的问题 */
+  select { color:#fff; }
+  select option,
+  select optgroup{
+    color:#1a1a1a !important;
+    background:#ffffff !important;
+    text-shadow:none !important;
+  }
+  select optgroup{ font-weight:700; }
+  select option:checked{
+    background:#ffe082 !important;
+    color:#1a1a1a !important;
+  }
+  select:required:invalid{ color:var(--muted); }
+
+  /* === 新增：未作答高亮样式 === */
+  .missing{
+    border-color:#ff7676 !important;
+    box-shadow:0 0 0 3px rgba(255,118,118,.25) !important;
+  }
+  .q-item.missing{
+    border-color:rgba(255,118,118,.9) !important;
+  }
 </style>
 </head>
 <body>
@@ -390,20 +404,6 @@
         </section>
       </form>
 
-      <!-- ✅ 新增：Step 6 开始实验确认（提交后显示；独立于表单，避免表单隐藏时被一起隐藏） -->
-      <section id="step6" class="card qcard" hidden>
-        <div class="hd">
-          <div class="title" style="font-size:18px">
-            <span class="badge" style="font-size:12px">STEP 6</span> 开始实验
-          </div>
-        </div>
-        <div class="bd" style="text-align:center">
-          <p style="margin-top:4px;margin-bottom:14px;font-weight:700">我已完成问卷，开始实验</p>
-          <button id="start-experiment" class="btn" type="button">我已完成问卷，开始实验</button>
-          <p class="tip" style="margin-top:10px">若浏览器拦截了新页面，请点击上方按钮重新打开实验。</p>
-        </div>
-      </section>
-
       <!-- 提交结果 -->
       <div id="result" class="card qcard" hidden>
         <div class="hd"><div class="title" style="font-size:18px"><span class="badge" style="font-size:12px">DONE</span> 提交成功</div></div>
@@ -422,26 +422,48 @@
     </div>
   </div>
 
-<!-- ✅ 新增：COS SDK，用于覆盖上传到相同 Key -->
-<script src="https://cdn.jsdelivr.net/npm/cos-js-sdk-v5/dist/cos-js-sdk-v5.min.js"></script>
-
 <script>
 // ✅ 是否被嵌在 iframe 中（实验页里）
 const IS_EMBEDDED = (window.top !== window.self);
-
 
 // ========== 1) 配置 ==========
 const FORM_ID = (()=>{ const d=new Date(); return 'Q-' + d.toISOString().replace(/[-:TZ.]/g,'').slice(0,14) + '-' + Math.random().toString(36).slice(2,6).toUpperCase(); })();
 const SUBMIT_ENDPOINT = '问卷联动版（前测）.HTLM';// 可填入你的后端 URL
 const DRAFT_KEY = 'survey-draft-experimentstyle-v1';
-/* ✅ 新增：与实验页一致的 COS 配置（保持不变） */
-const STS_URL    = 'https://bodyshape2025-8gk5msghc2121838-1373390636.ap-shanghai.app.tcloudbase.com/cos-sts-event';
-const COS_BUCKET = 'bodyshape-data-1373390636';
-const COS_REGION = 'ap-shanghai';
-/* ✅ 新增：实验页路径（按需改成你的实问卷联动版（前测）验 HTML 文件名或完整 URL） */
-const EXPERIMENT_PAGE = '问卷联动版（前测）.HTLM';
-/* ✅ 新增：保存最近一次实验页 URL，供第六步按钮复用 */
-let LAST_EXP_URL = '';
+
+/* ✅ 新增：用于接收/缓存“实验数据”的内存变量与工具 */
+let __expData = null;
+
+/* ✅ 新增：从 storage 读取实验数据（容错多个常见 Key） */
+function loadExperimentData(){
+  if (__expData) return __expData;
+  const keys = [
+    `experiment:${FORM_ID}`,
+    `exp:${FORM_ID}`,
+    'experiment_data',
+    'exp_data'
+  ];
+  for(const k of keys){
+    const raw = sessionStorage.getItem(k) || localStorage.getItem(k);
+    if(raw){
+      try{ __expData = JSON.parse(raw); }catch(_){ __expData = raw; }
+      return __expData;
+    }
+  }
+  return null;
+}
+
+/* ✅ 新增：监听父页消息，把实验数据缓存起来，键：experiment:FORM_ID */
+window.addEventListener('message', (e)=>{
+  try{
+    const msg = e.data || {};
+    if(!msg || typeof msg!=='object') return;
+    if(msg.type==='EXPERIMENT_DATA' || msg.type==='EXPERIMENT_DONE' || msg.type==='EXP_DATA'){
+      __expData = msg.payload ?? msg.data ?? msg.result ?? null;
+      try{ sessionStorage.setItem(`experiment:${FORM_ID}`, JSON.stringify(__expData)); }catch(_){}
+    }
+  }catch(_){}
+});
 
 // 量表题库 —— 来自你发来的问卷
 const SCALE_A = {
@@ -540,8 +562,8 @@ const SCALE_D = {
 
 // ========== 3) 表单渲染与逻辑 ==========
 const $ = s=>document.querySelector(s); const $$ = s=>Array.from(document.querySelectorAll(s));
-/* ✅ 修改：步骤总数由 5 改为 6 */
-const steps = [1,2,3,4,5,6]; let current=1; const pgEl=$('#pg'); const stepper=$('#stepper'); const form=$('#form'); const result=$('#result');
+/* ✅ 改为 5 步 */
+const steps = [1,2,3,4,5]; let current=1; const pgEl=$('#pg'); const stepper=$('#stepper'); const form=$('#form'); const result=$('#result');
 $('#formId').textContent = '表单ID：'+FORM_ID;
 
 function renderStepper(){
@@ -586,6 +608,14 @@ function renderLikertList(containerId, prefix, labels, items){
     });
 
     item.appendChild(row);
+
+    /* ✅ 新增：每题就地错误提示（默认隐藏） */
+    const miss = document.createElement('div');
+    miss.className = 'err';
+    miss.dataset.err = name;
+    miss.textContent = '请作答此题';
+    item.appendChild(miss);
+
     list.appendChild(item);
   });
 
@@ -604,28 +634,59 @@ renderLikertList('blockB','B', SCALE_B.labels, SCALE_B.items);
 renderLikertList('blockC','C', SCALE_C.labels, SCALE_C.items);
 renderLikertList('blockD','D', SCALE_D.labels, SCALE_D.items);
 
+/* ✅ 替换：增强版校验（红框高亮 + 就地提示 + 自动滚到第一处漏答） */
 function validateStep(n){
   const sec = document.querySelector(`section.step-sec[data-step="${n}"]`);
-  let ok=true; const required = sec.querySelectorAll('[required]');
-  const checkedNames = new Set();
-  required.forEach(ctrl=>{
-    if(ctrl.type==='radio'){
-      if(checkedNames.has(ctrl.name)) return;
-      checkedNames.add(ctrl.name);
-      const group = sec.querySelectorAll(`[name="${ctrl.name}"]`);
-      const v = Array.from(group).some(x=>x.checked);
-      if(!v) ok=false;
-    }else{
-      const v = ctrl.value.trim()!==''; 
+  let ok = true;
+  let firstMiss = null;
+
+  // 清理旧状态
+  sec.querySelectorAll('.missing').forEach(el=>el.classList.remove('missing'));
+  sec.querySelectorAll('.err').forEach(el=>el.style.display='none');
+
+  // 1) 文本/数字/下拉/多行（非单选组）
+  const singles = sec.querySelectorAll('input[required]:not([type=radio]):not([type=checkbox]), select[required], textarea[required]');
+  singles.forEach(ctrl=>{
+    const v = (ctrl.value||'').trim() !== '';
+    if(!v){
+      ok = false;
+      if(!firstMiss) firstMiss = ctrl;
+      ctrl.classList.add('missing');
       const errEl = sec.querySelector(`[data-err="${ctrl.name||ctrl.id}"]`);
-      if(errEl){ errEl.style.display = v ? 'none' : 'block'; }
-      if(!v) ok=false;
+      if(errEl) errEl.style.display = 'block';
     }
   });
+
+  // 2) 单选题：包含基本信息里的单选 + 所有 Likert 题
+  const radioNames = new Set(Array.from(sec.querySelectorAll('input[type=radio][name]')).map(x=>x.name));
+  radioNames.forEach(name=>{
+    const group = sec.querySelectorAll(`input[type=radio][name="${name}"]`);
+    const answered = Array.from(group).some(x=>x.checked);
+    if(!answered){
+      ok = false;
+      if(!firstMiss) firstMiss = group[0];
+
+      // 基本信息单选：显示 data-err=xxx 的提示
+      const err1 = sec.querySelector(`[data-err="${name}"]`);
+      if(err1) err1.style.display = 'block';
+
+      // Likert：给整题卡片加红框，并显示题内提示
+      const qi = group[0].closest('.q-item');
+      if(qi){
+        qi.classList.add('missing');
+        const err2 = sec.querySelector(`.err[data-err="${name}"]`);
+        if(err2) err2.style.display = 'block';
+      }
+    }
+  });
+
+  if(!ok && firstMiss){
+    firstMiss.scrollIntoView({behavior:'smooth', block:'center'});
+  }
   return ok;
 }
 
-$$('[data-next]').forEach(b=>b.addEventListener('click',()=>{ if(!validateStep(current)) return; const i=steps.indexOf(current); if(i<steps.length-2) showStep(steps[i+1]); }));
+$$('[data-next]').forEach(b=>b.addEventListener('click',()=>{ if(!validateStep(current)) return; const i=steps.indexOf(current); if(i<steps.length-1) showStep(steps[i+1]); }));
 $$('[data-prev]').forEach(b=>b.addEventListener('click',()=>{ const i=steps.indexOf(current); if(i>0) showStep(steps[i-1]); }));
 
 // 保存草稿（轻量防抖）
@@ -656,83 +717,25 @@ function loadDraft(){ try{
 
 form.addEventListener('input', ()=>{ clearTimeout(window.__draft); window.__draft = setTimeout(saveDraft, 600); });
 
-/* ✅ 新增：独立函数用于（重新）打开实验页 */
-function openExperiment(urlOverride){
-  let url = urlOverride || LAST_EXP_URL;
-  if(!url && EXPERIMENT_PAGE){
-    const u = new URL(EXPERIMENT_PAGE, location.href);
-    u.searchParams.set('pid', FORM_ID);
-    const gSel = form.querySelector('input[name="gender"]:checked');
-    const gVal = gSel ? gSel.value : '';
-    const gParam = (gVal==='男') ? 'M' : (gVal==='女' ? 'F' : '');
-    if (gParam) u.searchParams.set('gender', gParam);
-    url = u.toString();
+/* ✅ 新增：作答变更即清除该题的错误显示/红框 */
+document.addEventListener('change', (e)=>{
+  const t = e.target;
+  if(!t.name) return;
+  const sec = t.closest('section.step-sec');
+  const key = t.type === 'radio' ? t.name : (t.name || t.id);
+  const err = sec && sec.querySelector(`[data-err="${key}"]`);
+  if(err) err.style.display = 'none';
+
+  if(t.type === 'radio'){
+    const qi = t.closest('.q-item');
+    if(qi) qi.classList.remove('missing');
+  }else{
+    t.classList.remove('missing');
   }
-  if (url) window.open(url, '_blank');
-}
-
-/* ✅ 绑定第六步按钮（初始隐藏，提交后可见） */
-const step6El = document.getElementById('step6');
-const startBtn = document.getElementById('start-experiment');
-if(startBtn){
-  startBtn.addEventListener('click', ()=> openExperiment());
-}
-
-/* ✅ 新增：把问卷与实验数据合并并覆盖上传到 COS（与实验页同桶同 Key） */
-async function mergeAndUploadToCOS(surveyData){
-  try{
-    // 1) 取实验 payload（实验页在上传成功后已写入 sessionStorage）
-    let expPayload = {};
-    try{ expPayload = JSON.parse(sessionStorage.getItem('exp_payload') || '{}'); }catch(_){}
-    // 2) 拿到上传 Key：URL 优先（实验页跳转时带 ?expKey=...），否则 sessionStorage 兜底
-    const usp = new URLSearchParams(location.search);
-    const expKeyFromUrl = usp.get('expKey') || '';
-    const expKeyFromSS  = sessionStorage.getItem('exp_uploaded_key') || '';
-    let key = expKeyFromUrl || expKeyFromSS;
-
-    // 3) 组合对象：最终文件包含“实验 + 问卷”
-    const combined = { ...expPayload, survey: surveyData };
-
-    // 4) 申请 STS 并上传（相同 Key 会覆盖）
-    const sts = await fetch(STS_URL).then(r=>r.json());
-    if(!sts.ok) throw new Error(sts.error || 'Get STS failed');
-    const cos = new COS({
-      getAuthorization: (options, cb)=> cb({
-        TmpSecretId:  sts.credentials.TmpSecretId,
-        TmpSecretKey: sts.credentials.TmpSecretKey,
-        SecurityToken: sts.credentials.Token,
-        StartTime: Math.floor(Date.now()/1000) - 1,
-        ExpiredTime: Math.floor(Date.now()/1000) + 600
-      })
-    });
-
-    // 5) 如果没拿到 expKey（极少数情况），就根据 sessionId/FORM_ID 新建一个 Key 防丢
-    if(!key){
-      const dateDir = new Date().toISOString().slice(0,10);
-      const sid = usp.get('sessionId') || expPayload.sessionId || `survey_${FORM_ID}`;
-      key = `sessions/${dateDir}/${sid}.json`;
-    }
-
-    await new Promise((resolve,reject)=>{
-      cos.putObject({
-        Bucket: COS_BUCKET, Region: COS_REGION, Key: key,
-        Body: new Blob([JSON.stringify(combined)], {type:'application/json'})
-      }, (err, data)=> err ? reject(err) : resolve(data));
-    });
-
-    try{ sessionStorage.setItem('merged_uploaded_key', key); }catch(_){}
-    console.log('Merged survey+experiment uploaded to COS:', key);
-    return key;
-  }catch(err){
-    console.error('Merge upload failed:', err);
-    // 保持页面流程正常；需要的话可提示：
-    // alert('问卷已提交，但与实验数据合并上传失败，请联系主试或稍后重试。');
-    return null;
-  }
-}
+});
 
 // 提交
-form.addEventListener('submit', async (e)=>{
+form.addEventListener('submit', (e)=>{
   e.preventDefault(); if(!validateStep(current)) return;
   // 注意力检查：特质感恩第7题必须选 4
   const attn = form.querySelector('input[name="D7"]:checked');
@@ -740,36 +743,31 @@ form.addEventListener('submit', async (e)=>{
 
   const data = serialize();
 
-  /* ✅ 缓存问卷数据，供实验页读取 */
+  /* 缓存问卷数据（可选） */
   try{
     sessionStorage.setItem('survey:'+FORM_ID, JSON.stringify(data));
     sessionStorage.setItem('survey_last_form_id', FORM_ID);
   }catch(_e){}
 
-  /* ✅ 告知父页：问卷完成 */
+  /* 告知父页：问卷完成（若嵌入在实验页可用） */
   parent.postMessage({type:'SURVEY_DONE', payload: data}, '*');
 
-  /* ✅ 仅在“非嵌入”且配置了实验页时，才构造 URL 并新开页 */
-  if (EXPERIMENT_PAGE){
-    const gSel = form.querySelector('input[name="gender"]:checked');
-    const gVal = gSel ? gSel.value : '';
-    const gParam = (gVal==='男') ? 'M' : (gVal==='女' ? 'F' : '');
-    const u = new URL(EXPERIMENT_PAGE, location.href);
-    u.searchParams.set('pid', FORM_ID);
-    if (gParam) u.searchParams.set('gender', gParam);
-    LAST_EXP_URL = u.toString();
-    if (!IS_EMBEDDED){
-      window.open(LAST_EXP_URL, '_blank');
-    }
-  }
+  /* ✅ 合并“实验数据”与问卷一起上传到同一地址 */
+  const exp = loadExperimentData(); // 可能为 null
+  const combined = {
+    __meta: { ...data.__meta, kind:'survey+experiment', pid: FORM_ID },
+    survey: data,
+    experiment: exp ?? null
+  };
 
-  // 可选：POST 到服务器（原逻辑保留）
+  // 统一发送到同一个 SUBMIT_ENDPOINT（JSON）
   if(SUBMIT_ENDPOINT){
-    fetch(SUBMIT_ENDPOINT,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}).catch(()=>{});
+    fetch(SUBMIT_ENDPOINT,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(combined)
+    }).catch(()=>{});
   }
-
-  // ✅ 关键一步：与实验结果合并并覆盖上传到同一个 COS Key
-  await mergeAndUploadToCOS(data);
 
   document.getElementById('download-json').onclick = ()=>{
     const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
@@ -782,18 +780,10 @@ form.addEventListener('submit', async (e)=>{
 
   localStorage.removeItem(DRAFT_KEY);
 
-  /* ✅ 提交后的显示逻辑 */
+  /* 提交后的显示逻辑（不再有“开始实验”卡片） */
   form.hidden = true;
   result.hidden = false;
-  if (IS_EMBEDDED){
-    // 嵌入到实验页时：不显示第六步卡片，由实验页按钮控制
-    step6El.hidden = true;
-    current = 5; setProgress();
-  }else{
-    // 非嵌入（问卷单页使用）时：保留你的第六步卡片
-    step6El.hidden = false;
-    current = 6; setProgress();
-  }
+  current = steps[steps.length-1]; setProgress(); // 进度到 100%
   window.scrollTo({top:0, behavior:'smooth'});
 });
 

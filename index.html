@@ -293,6 +293,16 @@
 <div id="idealTypeLabel"><p>调至您的<b>理想体型</b>，按 <b>Enter</b> 确认。</p></div>
 <div id="practicePrompt" class="muted">熟悉后可按 <b>Enter</b> 结束本次练习</div>
 
+<!-- ✅ 新增：问卷内嵌页 -->
+<section id="surveyEmbed" class="screen">
+  <div class="panel" style="gap:14px">
+    <h1 style="font-size:28px;margin:0">请完成问卷</h1>
+    <p class="muted" style="font-size:16px;margin:0 0 8px">提交问卷后，系统将把“实验 + 问卷”一次上传至云端。</p>
+    <iframe id="surveyFrame" title="问卷" style="width:min(1100px,92vw);height:78vh;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:#111" referrerpolicy="no-referrer"></iframe>
+    <p class="muted" style="font-size:14px;margin:6px 0 0">如问卷未加载，请检查网络或刷新本页。</p>
+  </div>
+</section>
+
 <!-- 结束页与遮罩 -->
 <section id="thankYou" class="screen">
   <div class="panel">
@@ -321,13 +331,8 @@ const STS_URL    = 'https://bodyshape2025-8gk5msghc2121838-1373390636.ap-shangha
 const COS_BUCKET = 'bodyshape-data-1373390636';
 const COS_REGION = 'ap-shanghai';
 
-/* ===== 问卷跳转设置（新增） =====
- * 将 SURVEY_URL 改为你的问卷地址或本地文件名，例如：
- * '实验二（前侧问卷）.html'
- * 将通过 URL 参数传递：
- * studentId, phone4, gender, series, sessionId, startedAt, endedAt
- */
-const SURVEY_URL = '实验二（前侧问卷）.html';
+/* ✅ 新增：问卷地址（请替换为你的问卷文件路径/URL） */
+const SURVEY_URL = './survey.html'; // 例：同源下的问卷文件；可换成你的线上地址
 
 /* ===== 图片资源路径 ===== */
 const IS_PROD   = location.hostname.endsWith('github.io');
@@ -353,6 +358,7 @@ const screens = {
   pracG: document.getElementById('practiceGuidelines'),
   currG: document.getElementById('currentGuidelines'),
   idealG: document.getElementById('idealGuidelines'),
+  survey: document.getElementById('surveyEmbed'), // ✅ 新增
   thank: document.getElementById('thankYou')
 };
 const preloadPg = document.getElementById('preloadPg');
@@ -372,6 +378,10 @@ const practicePrompt = document.getElementById('practicePrompt');
 
 const studentIdEl = document.getElementById('studentId');
 const subjectNumberEl = document.getElementById('subjectNumber');
+
+/* ✅ 新增：问卷 iframe/通信 */
+const surveyFrame = document.getElementById('surveyFrame');
+let __lastCombined = null; // 存放问卷返回的“实验+问卷”组合，用于失败重传
 
 let gender = null, series = 'F', imgList = [];
 let idx = 0, holdTimer = null, holdKey = null, adjusting = false, preloaded = false;
@@ -399,7 +409,7 @@ if (agree && btnNoticeNext){
     await runNoticeProgress();
 
     // ✅ 进入实验前先请求全屏（有用户点击手势，最可靠）
-  enterFullscreen();
+    enterFullscreen();
 
     // 进度完毕后进入下一页（FX 会随 showScreen 自动切换）
     showScreen('guide');
@@ -628,7 +638,14 @@ function showUploadFailedOverlay(msg){
   const el = document.getElementById('overlayFailed'); el.style.display='flex';
   document.getElementById('btnRetryUpload').onclick = async ()=>{
     el.style.display='none'; showUploadingOverlay();
-    try{ await uploadAllResults(); hideUploadingOverlay(); goToSurvey(); }  // ★ 修改：重试成功后也进入问卷
+    try{
+      if (__lastCombined){
+        await uploadCombined(__lastCombined); // ✅ 重试“组合数据”上传
+      } else {
+        await uploadAllResults(); // 兼容旧路径
+      }
+      hideUploadingOverlay(); showScreen('thank');
+    }
     catch(e){ hideUploadingOverlay(); showUploadFailedOverlay(String(e)); }
   };
 }
@@ -655,41 +672,57 @@ async function uploadAllResults(){
       Body: new Blob([JSON.stringify(payload)], { type:'application/json' })
     }, (err,data)=>err?reject(err):resolve(data));
   });
-  try {
-  sessionStorage.setItem('exp_payload', JSON.stringify(payload));
-  sessionStorage.setItem('exp_uploaded_key', key);
-} catch(_) {}
-
   console.log('Uploaded to COS:', key);
   return key;
 }
 
-/* ===== 问卷跳转函数（新增） ===== */
-function goToSurvey(){
-  const base = (SURVEY_URL || '').trim();
-  if (!base){ showScreen('thank'); return; } // 兜底：未配置问卷链接则保留原感谢页
-
-  const params = new URLSearchParams({
-    studentId: (studentIdEl.value || '').trim(),
-    phone4: (subjectNumberEl.value || '').trim(),
-    gender: gender || '',
-    series,
-    sessionId: sessionId || '',
-    startedAt: new Date(experimentStartTime || Date.now()).toISOString(),
-    endedAt: new Date().toISOString()
+/* ✅ 新增：上传“问卷+实验”的合并对象 */
+async function uploadCombined(combined){
+  const sts = await fetch(STS_URL).then(r=>r.json());
+  if (!sts.ok) throw new Error(sts.error || 'Get STS failed');
+  const cos = new COS({ getAuthorization: (options, cb) => cb({
+      TmpSecretId:  sts.credentials.TmpSecretId,
+      TmpSecretKey: sts.credentials.TmpSecretKey,
+      SecurityToken: sts.credentials.Token,
+      StartTime: Math.floor(Date.now()/1000) - 1,
+      ExpiredTime: Math.floor(Date.now()/1000) + 600
+    }) });
+  const sid = (combined && combined.experiment && combined.experiment.sessionId) || sessionId || (Date.now()+'');
+  const dateDir = new Date().toISOString().slice(0,10);
+  const key = `sessions_combined/${dateDir}/${sid}.json`; // 与单纯实验区分存放
+  await new Promise((resolve,reject)=>{
+    cos.putObject({ Bucket: COS_BUCKET, Region: COS_REGION, Key: key,
+      Body: new Blob([JSON.stringify(combined)], { type:'application/json' })
+    }, (err,data)=>err?reject(err):resolve(data));
   });
-  const expKey = sessionStorage.getItem('exp_uploaded_key') || '';
-params.set('expKey', expKey);
+  console.log('Uploaded combined to COS:', key);
+  return key;
+}
 
+/* ✅ 新增：进入问卷、传递实验数据，并等待问卷回传组合数据后上传 */
+function proceedToSurvey(){
+  // 1) 构造实验数据
+  const exp = buildPayload();
 
-  const url = base + (base.includes('?') ? '&' : '?') + params.toString();
-  const go = ()=> location.replace(encodeURI(url)); // 处理中文文件名
+  // 2) 简单缓存到 sessionStorage（问卷页也会尝试读取这些兜底键）
+  try{
+    sessionStorage.setItem('experiment_data', JSON.stringify(exp));
+    sessionStorage.setItem('exp_data', JSON.stringify(exp));
+    sessionStorage.setItem('exp:'+exp.sessionId, JSON.stringify(exp));
+  }catch(_){}
 
-  if (document.fullscreenElement && document.exitFullscreen){
-    document.exitFullscreen().catch(()=>{}).finally(go);
-  }else{
-    go();
-  }
+  // 3) 打开问卷页
+  surveyFrame.src = SURVEY_URL;
+  showScreen('survey');
+
+  // 4) 问卷加载后，发送实验数据（postMessage）
+  surveyFrame.addEventListener('load', ()=>{
+    try{
+      surveyFrame.contentWindow.postMessage({ type:'EXPERIMENT_DATA', payload: exp }, '*');
+      // 再次发送一次，避免某些浏览器 load 早于问卷脚本装载
+      setTimeout(()=>{ try{ surveyFrame.contentWindow.postMessage({ type:'EXPERIMENT_DATA', payload: exp }, '*'); }catch(_){} }, 500);
+    }catch(_){}
+  }, { once:true });
 }
 
 /* ===== 流程控制 ===== */
@@ -776,11 +809,10 @@ window.addEventListener('keydown',(e)=>{
           idealTrial++;
           if (idealTrial < IDEAL_TRIALS) startTrial();
           else {
+            // ✅ 实验结束：不直接上传，转入问卷
             stimulus.style.display='none';
             document.body.classList.remove('hide-cursor');
-            showUploadingOverlay();
-            try{ await uploadAllResults(); hideUploadingOverlay(); goToSurvey(); } // ★ 修改：上传成功后进入问卷
-            catch(err){ hideUploadingOverlay(); console.error('Upload failed:', err); showUploadFailedOverlay((err && err.message) ? err.message : String(err)); }
+            proceedToSurvey();
           }
         }
       }, FIX_MS);
@@ -788,6 +820,27 @@ window.addEventListener('keydown',(e)=>{
   }
 });
 window.addEventListener('keyup',(e)=>{ const k = e.key.toLowerCase(); if (k==='f' || k==='j') stopHold(); if (k==='enter') enterLocked = false; });
+
+/* ✅ 新增：接收问卷页回传，统一上传到 COS */
+window.addEventListener('message', async (e)=>{
+  const msg = e.data || {};
+  if (!msg || typeof msg !== 'object') return;
+
+  // 问卷已提交，带回“实验+问卷”的组合数据
+  if (msg.type === 'SURVEY_READY_TO_UPLOAD' && msg.payload){
+    try{
+      __lastCombined = msg.payload;
+      showUploadingOverlay();
+      await uploadCombined(__lastCombined);
+      hideUploadingOverlay();
+      showScreen('thank');
+    }catch(err){
+      hideUploadingOverlay();
+      console.error('Combined upload failed:', err);
+      showUploadFailedOverlay((err && err.message) ? err.message : String(err));
+    }
+  }
+});
 
 /* 初始提示 */
 preloadTip.textContent = '等待选择性别开始预加载…';

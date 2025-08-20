@@ -354,17 +354,7 @@
           </div>
         </section>
 
-        <!-- Step 2：身体形象情感体验（7点满意度，6题） -->
-        <section class="card qcard step-sec" data-step="2" hidden>
-          <div class="hd"><div class="title" style="font-size:18px"><span class="badge" style="font-size:12px">STEP 2</span> 下面是您对当前身体形象的情感体验，请您选出最符合自己的选项作答即可。</div></div>
-          <div class="bd">
-            <div class="likert" id="blockA"></div>
-          </div>
-          <div class="actions">
-            <button type="button" class="btn ghost" data-prev>← 上一步</button>
-            <button type="button" class="btn" data-next>下一步 →</button>
-          </div>
-        </section>
+        <!-- （已删除 Step 2） -->
 
         <!-- Step 3：身体欣赏（5点，10题） -->
         <section class="card qcard step-sec" data-step="3" hidden>
@@ -378,17 +368,7 @@
           </div>
         </section>
 
-        <!-- Step 4：内感受性（7点，18题） -->
-        <section class="card qcard step-sec" data-step="4" hidden>
-          <div class="hd"><div class="title" style="font-size:18px"><span class="badge" style="font-size:12px">STEP 4</span> 根据您的真实感受程度，在以下问题中选出您认为最贴切的选项。</div></div>
-          <div class="bd">
-            <div class="likert" id="blockC"></div>
-          </div>
-          <div class="actions">
-            <button type="button" class="btn ghost" data-prev>← 上一步</button>
-            <button type="button" class="btn" data-next>下一步 →</button>
-          </div>
-        </section>
+        <!-- （已删除 Step 4） -->
 
         <!-- Step 5：特质感恩（7点，7题，含注意力检查） -->
         <section class="card qcard step-sec" data-step="5" hidden>
@@ -430,6 +410,7 @@ const IS_EMBEDDED = (window.top !== window.self);
 const FORM_ID = (()=>{ const d=new Date(); return 'Q-' + d.toISOString().replace(/[-:TZ.]/g,'').slice(0,14) + '-' + Math.random().toString(36).slice(2,6).toUpperCase(); })();
 const SUBMIT_ENDPOINT = '问卷联动版（前测）.HTLM';// 可填入你的后端 URL
 const DRAFT_KEY = 'survey-draft-experimentstyle-v1';
+const UPLOAD_BY_PARENT = true; // ✅ 新增：由父页面统一上传（问卷不直传）
 
 /* ✅ 新增：用于接收/缓存“实验数据”的内存变量与工具 */
 let __expData = null;
@@ -562,8 +543,8 @@ const SCALE_D = {
 
 // ========== 3) 表单渲染与逻辑 ==========
 const $ = s=>document.querySelector(s); const $$ = s=>Array.from(document.querySelectorAll(s));
-/* ✅ 改为 5 步 */
-const steps = [1,2,3,4,5]; let current=1; const pgEl=$('#pg'); const stepper=$('#stepper'); const form=$('#form'); const result=$('#result');
+/* ✅ 步骤仅保留 1、3、5 */
+const steps = [1,3,5]; let current=1; const pgEl=$('#pg'); const stepper=$('#stepper'); const form=$('#form'); const result=$('#result');
 $('#formId').textContent = '表单ID：'+FORM_ID;
 
 function renderStepper(){
@@ -628,10 +609,10 @@ function renderLikertList(containerId, prefix, labels, items){
 }
 
 
-// 渲染四个题组（逐题下方评分）
-renderLikertList('blockA','A', SCALE_A.labels, SCALE_A.items);
+// 渲染题组（逐题下方评分） —— 仅保留 Step 3 与 Step 5
+/* 已删除：renderLikertList('blockA','A', SCALE_A.labels, SCALE_A.items); */
 renderLikertList('blockB','B', SCALE_B.labels, SCALE_B.items);
-renderLikertList('blockC','C', SCALE_C.labels, SCALE_C.items);
+/* 已删除：renderLikertList('blockC','C', SCALE_C.labels, SCALE_C.items); */
 renderLikertList('blockD','D', SCALE_D.labels, SCALE_D.items);
 
 /* ✅ 替换：增强版校验（红框高亮 + 就地提示 + 自动滚到第一处漏答） */
@@ -752,7 +733,7 @@ form.addEventListener('submit', (e)=>{
   /* 告知父页：问卷完成（若嵌入在实验页可用） */
   parent.postMessage({type:'SURVEY_DONE', payload: data}, '*');
 
-  /* ✅ 合并“实验数据”与问卷一起上传到同一地址 */
+  /* ✅ 合并“实验数据”与问卷，交由父页统一上传 */
   const exp = loadExperimentData(); // 可能为 null
   const combined = {
     __meta: { ...data.__meta, kind:'survey+experiment', pid: FORM_ID },
@@ -760,13 +741,18 @@ form.addEventListener('submit', (e)=>{
     experiment: exp ?? null
   };
 
-  // 统一发送到同一个 SUBMIT_ENDPOINT（JSON）
-  if(SUBMIT_ENDPOINT){
-    fetch(SUBMIT_ENDPOINT,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(combined)
-    }).catch(()=>{});
+  if (UPLOAD_BY_PARENT){
+    // 交给父页面进行一次性上传到云端
+    parent.postMessage({type:'SURVEY_READY_TO_UPLOAD', payload: combined}, '*');
+  } else {
+    // 保留原直传逻辑（如需在问卷页直传则把 UPLOAD_BY_PARENT 设为 false）
+    if(SUBMIT_ENDPOINT){
+      fetch(SUBMIT_ENDPOINT,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(combined)
+      }).catch(()=>{});
+    }
   }
 
   document.getElementById('download-json').onclick = ()=>{

@@ -172,6 +172,19 @@
   #notice .nz-pane li { text-align:left; }
   #notice .nz-pane h2 { text-align:center; }
   #notice .nz-pane p, #notice .nz-lead { word-break:break-word; white-space:normal; }
+  /* —— 让问卷页全屏铺满 —— */
+#surveyEmbed .panel{
+  padding:0;                      /* 去掉面板内边距 */
+  overflow:hidden;                /* 不要滚动条框 */
+}
+#surveyEmbed .panel > h1,
+#surveyEmbed .panel > p{ display:none }  /* 隐藏“请完成问卷”等标题文案 */
+#surveyEmbed iframe{
+  position:absolute; inset:0;     /* 占满整个视口 */
+  width:100vw; height:100dvh;     /* dvh 适配移动端地址栏 */
+  border:0; border-radius:0; background:#111;
+}
+
 </style>
 </head>
 <body>
@@ -298,7 +311,7 @@
   <div class="panel" style="gap:14px">
     <h1 style="font-size:28px;margin:0">请完成问卷</h1>
     <p class="muted" style="font-size:16px;margin:0 0 8px">提交问卷后，系统将把“实验 + 问卷”一次上传至云端。</p>
-    <iframe id="surveyFrame" title="问卷" style="width:min(1100px,92vw);height:78vh;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:#111" referrerpolicy="no-referrer"></iframe>
+    <iframe id="surveyFrame" title="问卷" allow="fullscreen" referrerpolicy="no-referrer"></iframe>
     <p class="muted" style="font-size:14px;margin:6px 0 0">如问卷未加载，请检查网络或刷新本页。</p>
   </div>
 </section>
@@ -350,6 +363,10 @@ const CURRENT_TRIALS  = 10;
 const IDEAL_TRIALS    = 10;
 const FIX_MS = 800;
 const HOLD_INTERVAL = 70;
+
+/* ✅ 新增：CSV（trial 级长表） */
+const SAVE_CSV_LONG = true;                 // 开启长表 CSV 上传
+const CSV_DIR_LONG  = 'sessions_csv_long';  // CSV 在 COS 的目录
 
 /* ===== DOM/状态 ===== */
 const screens = {
@@ -586,6 +603,30 @@ function bmiFromIndex(series, index){
   else { return +(11.8 + index * 0.472).toFixed(2); }
 }
 
+/* ✅ 新增：CSV 工具（trial 级长表） */
+function csvEsc(v){ return `"${String(v ?? '').replace(/"/g,'""')}"`; }
+function makeCsvLong(payload){
+  const head = [
+    'sessionId','pid','subjectNumber','gender','series',
+    'task_type','trial_no','index','bmi','start_index',
+    'response_time','response_duration_ms','selected_image'
+  ];
+  const lines = [ head.join(',') ];
+  let cNo=0, iNo=0, pNo=0;
+  for(const r of (payload.rows||[])){
+    const trialNo = r.task_type==='当前体型' ? ++cNo
+                  : r.task_type==='理想体型' ? ++iNo
+                  : ++pNo; // 练习
+    const row = [
+      payload.sessionId, payload.pid, payload.subjectNumber, payload.gender, r.series,
+      r.task_type, trialNo, r.index, r.bmi, r.start_index,
+      r.response_time, r.response_duration_ms, r.selected_image
+    ].map(csvEsc).join(',');
+    lines.push(row);
+  }
+  return lines.join('\n');
+}
+
 /* ===== 呈现/索引 ===== */
 function updateStimulus(){
   idx = clamp(idx, 0, imgList.length-1);
@@ -673,6 +714,26 @@ async function uploadAllResults(){
     }, (err,data)=>err?reject(err):resolve(data));
   });
   console.log('Uploaded to COS:', key);
+
+  /* ✅ 新增：trial 级 CSV（长表）一并上传 */
+  if (SAVE_CSV_LONG){
+    const csv = makeCsvLong({
+      sessionId: payload.sessionId,
+      pid: payload.pid,
+      subjectNumber: payload.subjectNumber,
+      gender: payload.gender,
+      rows: payload.rows
+    });
+    const csvKey = `${CSV_DIR_LONG}/${dateDir}/${payload.sessionId}.csv`;
+    await new Promise((resolve,reject)=>{
+      cos.putObject({
+        Bucket: COS_BUCKET, Region: COS_REGION, Key: csvKey,
+        Body: new Blob([csv], { type:'text/csv;charset=utf-8' })
+      }, (err,data)=>err?reject(err):resolve(data));
+    });
+    console.log('Uploaded CSV (long) to COS:', csvKey);
+  }
+
   return key;
 }
 
@@ -696,6 +757,20 @@ async function uploadCombined(combined){
     }, (err,data)=>err?reject(err):resolve(data));
   });
   console.log('Uploaded combined to COS:', key);
+
+  /* ✅ 新增：把“合并对象中的实验数据”也导出为 trial 级 CSV 上传 */
+  if (SAVE_CSV_LONG && combined?.experiment?.rows?.length){
+    const csv = makeCsvLong(combined.experiment);
+    const csvKey = `${CSV_DIR_LONG}/${dateDir}/${sid}.csv`;
+    await new Promise((resolve,reject)=>{
+      cos.putObject({
+        Bucket: COS_BUCKET, Region: COS_REGION, Key: csvKey,
+        Body: new Blob([csv], { type:'text/csv;charset=utf-8' })
+      }, (err,data)=>err?reject(err):resolve(data));
+    });
+    console.log('Uploaded CSV (long, combined) to COS:', csvKey);
+  }
+
   return key;
 }
 
@@ -713,7 +788,7 @@ function proceedToSurvey(){
 
   // 3) 打开问卷页
   surveyFrame.src = SURVEY_URL;
-  showScreen('survey');
+  showScreen('survey');enterFullscreen(); // 再尝试全屏，已全屏则忽略
 
   // 4) 问卷加载后，发送实验数据（postMessage）
   surveyFrame.addEventListener('load', ()=>{

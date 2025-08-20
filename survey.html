@@ -228,6 +228,23 @@
   .q-item.missing{
     border-color:rgba(255,118,118,.9) !important;
   }
+  /* 提交成功卡片更高 & 居中 */
+#result .bd{
+  min-height: 45vh;          /* 想更高就调大：例如 60vh */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  padding:28px;
+}
+/* 隐藏下载相关控件（稳妥做法：按钮仍在 DOM，不影响现有 JS） */
+#download-json,
+#download-csv,
+#print-pdf,
+#result .bd .tip{
+  display:none !important;
+}
+
 </style>
 </head>
 <body>
@@ -425,7 +442,9 @@
       <div id="result" class="card qcard" hidden>
         <div class="hd"><div class="title" style="font-size:18px"><span class="badge" style="font-size:12px">DONE</span> 提交成功</div></div>
         <div class="bd" style="text-align:center">
-          <p>🎉 感谢你的填写！你可以在本地保存数据：</p>
+          <p>🎉 感谢你的填写，实验结束！🎉</p>
+          <p> 请您备注好学号与手机号码后4位后，添加实验主试微信领取实验报酬！！！</p>
+          <p> 按下“ESC”后，关闭当前页面即可。</p>
           <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:10px">
             <button id="download-json" class="btn ghost">下载 JSON</button>
             <button id="download-csv" class="btn ghost">下载 CSV</button>

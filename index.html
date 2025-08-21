@@ -371,7 +371,6 @@ const CSV_DIR_LONG  = 'sessions_csv_long';  // CSV 在 COS 的目录
 const SAVE_SURVEY_CSV = true;
 const CSV_DIR_SURVEY  = 'survey_csv';
 
-
 /* ===== DOM/状态 ===== */
 const screens = {
   notice: document.getElementById('notice'),
@@ -630,6 +629,7 @@ function makeCsvLong(payload){
   }
   return lines.join('\n');
 }
+
 /* ✅ 新增（问卷CSV）：通用扁平化 + 生成问卷CSV */
 function _flatten(obj, prefix = '', out = {}) {
   if (obj === null || obj === undefined) return out;
@@ -645,12 +645,8 @@ function _flatten(obj, prefix = '', out = {}) {
   return out;
 }
 function makeSurveyCsv(meta, survey) {
-  // 兼容两种常见结构：
-  // A) survey.answers 为数组：[{qid/question/title,label/text,answer/value,...}]
-  // B) survey 为任意对象：扁平后 key-value 两列
-  const csvEsc = (v)=>`"${String(v ?? '').replace(/"/g,'""')}"`;
-
-  // A) answers-array
+  const _esc = (v)=>`"${String(v ?? '').replace(/"/g,'""')}"`;
+  // 情形 A：answers 数组
   const answers = Array.isArray(survey?.answers) ? survey.answers : null;
   if (answers && answers.length) {
     const head = ['sessionId','pid','subjectNumber','gender','item_no','qid','question','label','answer'];
@@ -658,7 +654,6 @@ function makeSurveyCsv(meta, survey) {
     let i = 0;
     for (const a of answers) {
       i++;
-      // 尽量容错地取字段
       const qid      = a.qid ?? a.id ?? a.key ?? '';
       const question = a.question ?? a.title ?? a.text ?? '';
       const label    = a.label ?? a.optionLabel ?? '';
@@ -666,19 +661,18 @@ function makeSurveyCsv(meta, survey) {
       const row = [
         meta.sessionId, meta.pid, meta.subjectNumber, meta.gender,
         i, qid, question, label, answer
-      ].map(csvEsc).join(',');
+      ].map(_esc).join(',');
       lines.push(row);
     }
     return lines.join('\n');
   }
-
-  // B) key-value：把整个 survey 扁平化
+  // 情形 B：任意对象 → 扁平化为 key-value
   const flat = _flatten(survey || {});
   const head = ['sessionId','pid','subjectNumber','gender','key','value'];
   const lines = [ head.join(',') ];
   for (const [k,v] of Object.entries(flat)) {
     const row = [meta.sessionId, meta.pid, meta.subjectNumber, meta.gender, k, typeof v==='object'?JSON.stringify(v):v]
-      .map(csvEsc).join(',');
+      .map(_esc).join(',');
     lines.push(row);
   }
   return lines.join('\n');
@@ -834,22 +828,18 @@ async function uploadCombined(combined){
     console.log('Uploaded CSV (long, combined) to COS:', csvKey);
   }
 
-  return key;
-}
-
   /* ✅ 新增（问卷CSV）：把问卷也导出CSV上传 */
   if (SAVE_SURVEY_CSV) {
-    // 兼容不同命名：survey / questionnaire / form
     const surveyObj = combined?.survey ?? combined?.questionnaire ?? combined?.form;
     if (surveyObj) {
       const meta = {
         sessionId: sid,
-        pid: combined?.experiment?.pid ?? combined?.experiment?.pid ?? '',
+        pid: combined?.experiment?.pid ?? '',
         subjectNumber: combined?.experiment?.subjectNumber ?? '',
         gender: combined?.experiment?.gender ?? ''
       };
       const surveyCsv = makeSurveyCsv(meta, surveyObj);
-      const surveyCsvWithBOM = '\ufeff' + surveyCsv; // 加BOM，Excel不乱码
+      const surveyCsvWithBOM = '\ufeff' + surveyCsv;
       const surveyCsvKey = `${CSV_DIR_SURVEY}/${dateDir}/${sid}.csv`;
       await new Promise((resolve,reject)=>{
         cos.putObject({
@@ -862,6 +852,9 @@ async function uploadCombined(combined){
       console.log('No survey object found on combined payload; skip survey CSV.');
     }
   }
+
+  return key;
+}
 
 /* ✅ 新增：进入问卷、传递实验数据，并等待问卷回传组合数据后上传 */
 function proceedToSurvey(){

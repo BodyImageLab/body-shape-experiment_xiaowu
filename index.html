@@ -367,6 +367,10 @@ const HOLD_INTERVAL = 70;
 /* ✅ 新增：CSV（trial 级长表） */
 const SAVE_CSV_LONG = true;                 // 开启长表 CSV 上传
 const CSV_DIR_LONG  = 'sessions_csv_long';  // CSV 在 COS 的目录
+/* ✅ 新增（问卷CSV） */
+const SAVE_SURVEY_CSV = true;
+const CSV_DIR_SURVEY  = 'survey_csv';
+
 
 /* ===== DOM/状态 ===== */
 const screens = {
@@ -626,6 +630,59 @@ function makeCsvLong(payload){
   }
   return lines.join('\n');
 }
+/* ✅ 新增（问卷CSV）：通用扁平化 + 生成问卷CSV */
+function _flatten(obj, prefix = '', out = {}) {
+  if (obj === null || obj === undefined) return out;
+  if (Array.isArray(obj)) {
+    obj.forEach((v, i) => _flatten(v, `${prefix}[${i}]`, out));
+  } else if (typeof obj === 'object') {
+    for (const [k, v] of Object.entries(obj)) {
+      _flatten(v, prefix ? `${prefix}.${k}` : k, out);
+    }
+  } else {
+    out[prefix] = obj;
+  }
+  return out;
+}
+function makeSurveyCsv(meta, survey) {
+  // 兼容两种常见结构：
+  // A) survey.answers 为数组：[{qid/question/title,label/text,answer/value,...}]
+  // B) survey 为任意对象：扁平后 key-value 两列
+  const csvEsc = (v)=>`"${String(v ?? '').replace(/"/g,'""')}"`;
+
+  // A) answers-array
+  const answers = Array.isArray(survey?.answers) ? survey.answers : null;
+  if (answers && answers.length) {
+    const head = ['sessionId','pid','subjectNumber','gender','item_no','qid','question','label','answer'];
+    const lines = [ head.join(',') ];
+    let i = 0;
+    for (const a of answers) {
+      i++;
+      // 尽量容错地取字段
+      const qid      = a.qid ?? a.id ?? a.key ?? '';
+      const question = a.question ?? a.title ?? a.text ?? '';
+      const label    = a.label ?? a.optionLabel ?? '';
+      const answer   = a.answer ?? a.value ?? a.response ?? '';
+      const row = [
+        meta.sessionId, meta.pid, meta.subjectNumber, meta.gender,
+        i, qid, question, label, answer
+      ].map(csvEsc).join(',');
+      lines.push(row);
+    }
+    return lines.join('\n');
+  }
+
+  // B) key-value：把整个 survey 扁平化
+  const flat = _flatten(survey || {});
+  const head = ['sessionId','pid','subjectNumber','gender','key','value'];
+  const lines = [ head.join(',') ];
+  for (const [k,v] of Object.entries(flat)) {
+    const row = [meta.sessionId, meta.pid, meta.subjectNumber, meta.gender, k, typeof v==='object'?JSON.stringify(v):v]
+      .map(csvEsc).join(',');
+    lines.push(row);
+  }
+  return lines.join('\n');
+}
 
 /* ===== 呈现/索引 ===== */
 function updateStimulus(){
@@ -779,6 +836,32 @@ async function uploadCombined(combined){
 
   return key;
 }
+
+  /* ✅ 新增（问卷CSV）：把问卷也导出CSV上传 */
+  if (SAVE_SURVEY_CSV) {
+    // 兼容不同命名：survey / questionnaire / form
+    const surveyObj = combined?.survey ?? combined?.questionnaire ?? combined?.form;
+    if (surveyObj) {
+      const meta = {
+        sessionId: sid,
+        pid: combined?.experiment?.pid ?? combined?.experiment?.pid ?? '',
+        subjectNumber: combined?.experiment?.subjectNumber ?? '',
+        gender: combined?.experiment?.gender ?? ''
+      };
+      const surveyCsv = makeSurveyCsv(meta, surveyObj);
+      const surveyCsvWithBOM = '\ufeff' + surveyCsv; // 加BOM，Excel不乱码
+      const surveyCsvKey = `${CSV_DIR_SURVEY}/${dateDir}/${sid}.csv`;
+      await new Promise((resolve,reject)=>{
+        cos.putObject({
+          Bucket: COS_BUCKET, Region: COS_REGION, Key: surveyCsvKey,
+          Body: new Blob([surveyCsvWithBOM], { type:'text/csv;charset=utf-8' })
+        }, (err,data)=>err?reject(err):resolve(data));
+      });
+      console.log('Uploaded CSV (survey) to COS:', surveyCsvKey);
+    } else {
+      console.log('No survey object found on combined payload; skip survey CSV.');
+    }
+  }
 
 /* ✅ 新增：进入问卷、传递实验数据，并等待问卷回传组合数据后上传 */
 function proceedToSurvey(){

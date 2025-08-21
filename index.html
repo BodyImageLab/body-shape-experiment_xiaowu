@@ -120,7 +120,7 @@
   #notice .nz-pane ul{margin:8px 0 0 0;padding-left:18px;line-height:1.8;font-size:16px}
   #notice .nz-pane li{margin:.35em 0;padding-left:.2em}
   #notice .nz-pane li::marker{color:#ffd86b}
-  #notice .nz-muted{color:var(--muted);font-size:13px}
+  #notice .nz-muted{color:var(--muted); font-size:13px}
 
   /* 底部操作区 */
   #notice .nz-actions{
@@ -725,10 +725,13 @@ async function uploadAllResults(){
       rows: payload.rows
     });
     const csvKey = `${CSV_DIR_LONG}/${dateDir}/${payload.sessionId}.csv`;
+    /* ✅ 修改：为 CSV 加 BOM，Excel 打开不乱码 */
+    const csvWithBOM = '\ufeff' + csv; /* ✅ 修改 */
+
     await new Promise((resolve,reject)=>{
       cos.putObject({
         Bucket: COS_BUCKET, Region: COS_REGION, Key: csvKey,
-        Body: new Blob([csv], { type:'text/csv;charset=utf-8' })
+        Body: new Blob([csvWithBOM], { type:'text/csv;charset=utf-8' }) /* ✅ 修改 */
       }, (err,data)=>err?reject(err):resolve(data));
     });
     console.log('Uploaded CSV (long) to COS:', csvKey);
@@ -762,10 +765,13 @@ async function uploadCombined(combined){
   if (SAVE_CSV_LONG && combined?.experiment?.rows?.length){
     const csv = makeCsvLong(combined.experiment);
     const csvKey = `${CSV_DIR_LONG}/${dateDir}/${sid}.csv`;
+    /* ✅ 修改：为 CSV 加 BOM，Excel 打开不乱码 */
+    const csvWithBOM = '\ufeff' + csv; /* ✅ 修改 */
+
     await new Promise((resolve,reject)=>{
       cos.putObject({
         Bucket: COS_BUCKET, Region: COS_REGION, Key: csvKey,
-        Body: new Blob([csv], { type:'text/csv;charset=utf-8' })
+        Body: new Blob([csvWithBOM], { type:'text/csv;charset=utf-8' }) /* ✅ 修改 */
       }, (err,data)=>err?reject(err):resolve(data));
     });
     console.log('Uploaded CSV (long, combined) to COS:', csvKey);
@@ -884,10 +890,19 @@ window.addEventListener('keydown',(e)=>{
           idealTrial++;
           if (idealTrial < IDEAL_TRIALS) startTrial();
           else {
-            // ✅ 实验结束：不直接上传，转入问卷
+            // ✅ 实验结束：先上传（JSON + CSV），再进入问卷
             stimulus.style.display='none';
             document.body.classList.remove('hide-cursor');
-            proceedToSurvey();
+            /* ✅ 修改：先把数据上传一次（保证 CSV 一定生成） */
+            showUploadingOverlay(); /* ✅ 修改 */
+            try { /* ✅ 修改 */
+              await uploadAllResults(); /* ✅ 修改 */
+              hideUploadingOverlay(); /* ✅ 修改 */
+            } catch(e){ /* ✅ 修改 */
+              hideUploadingOverlay(); /* ✅ 修改 */
+              showUploadFailedOverlay(e.message || String(e)); /* ✅ 修改 */
+            } /* ✅ 修改 */
+            proceedToSurvey(); /* ✅ 修改：随后进入问卷 */
           }
         }
       }, FIX_MS);

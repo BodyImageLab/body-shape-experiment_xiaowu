@@ -649,6 +649,9 @@ function makeCsvWide(payload, survey){
   const idealBmis = idealRows.map(r=>Number(r.bmi)).filter(v=>Number.isFinite(v));
   const curRTs = curRows.map(r=>Number(r.response_duration_ms)).filter(v=>Number.isFinite(v));
   const idealRTs = idealRows.map(r=>Number(r.response_duration_ms)).filter(v=>Number.isFinite(v));
+  /* ✅ 新增：调整用时（从首次 F/J 到 Enter）的均值 */
+  const curADJs = curRows.map(r=>Number(r.adjustment_duration_ms)).filter(v=>Number.isFinite(v));
+  const idealADJs = idealRows.map(r=>Number(r.adjustment_duration_ms)).filter(v=>Number.isFinite(v));
 
   const mean = arr => (arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : NaN);
   const sd = arr => {
@@ -665,6 +668,9 @@ function makeCsvWide(payload, survey){
   const idealBmiMean = mean(idealBmis), idealBmiSd = sd(idealBmis);
   const curRtMean = mean(curRTs);
   const idealRtMean = mean(idealRTs);
+  /* ✅ 新增：两列均值 */
+  const curAdjMean = mean(curADJs);
+  const idealAdjMean = mean(idealADJs);
 
   head.push('task_type_当前体型_bmi_mean'); vals.push(fmt2(curBmiMean));
   head.push('task_type_当前体型_bmi_sd');   vals.push(fmt2(curBmiSd));
@@ -672,6 +678,9 @@ function makeCsvWide(payload, survey){
   head.push('task_type_理想体型_bmi_sd');   vals.push(fmt2(idealBmiSd));
   head.push('task_type_当前体型_rt_mean_ms'); vals.push(fmt0(curRtMean));
   head.push('task_type_理想体型_rt_mean_ms'); vals.push(fmt0(idealRtMean));
+  /* ✅ 新增：输出到宽表 */
+  head.push('task_type_当前体型_adjustment_duration_mean_ms'); vals.push(fmt0(curAdjMean));
+  head.push('task_type_理想体型_adjustment_duration_mean_ms'); vals.push(fmt0(idealAdjMean));
 
   /* ===== 把问卷并入同一行 ===== */
   const keySafe = (s)=> String(s ?? '').replace(/[^\w.-]+/g, '_');
@@ -904,7 +913,7 @@ async function uploadCombined(combined){
     console.log('Uploaded CSV (long, combined) to COS:', csvKey);
   }
 
-  /* ✅ 宽表：把问卷并入同一行（这是你需要的“同表同一行”） */
+  /* ✅ 宽表：把问卷并入同一行（包含新增两列 adjustment_duration_ms 均值） */
   if (SAVE_CSV_WIDE && combined?.experiment?.rows?.length){
     const csvWide = makeCsvWide(combined.experiment, surveyObj);
     const wideKey = `${CSV_DIR_WIDE}/${dateDir}/${sid}.csv`;

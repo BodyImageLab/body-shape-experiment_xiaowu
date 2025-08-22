@@ -614,8 +614,8 @@ function makeCsvLong(payload){
   return lines.join('\n');
 }
 
-/* ===== 单行汇总 CSV（宽表）— 已新增 6 个统计量 ===== */
-function makeCsvWide(payload){
+/* ===== 单行汇总 CSV（宽表）— 已新增 6 个统计量，并把问卷并入同一行 ===== */
+function makeCsvWide(payload, survey){
   const rows = payload.rows || [];
   const seriesVal = (rows[0] && rows[0].series) || '';
   const head = ['sessionId','pid','subjectNumber','gender','series'];
@@ -679,6 +679,27 @@ function makeCsvWide(payload){
 
   head.push('task_type_理想体型_rt_mean_ms');
   vals.push(fmt0(idealRtMean));
+
+  /* ===== 把问卷并入同一行（新增） ===== */
+  const keySafe = (s)=> String(s ?? '').replace(/[^\w.-]+/g, '_');
+  if (survey) {
+    const answers = Array.isArray(survey?.answers) ? survey.answers : null;
+    if (answers && answers.length) {
+      answers.forEach((a, i) => {
+        const qid = a.qid ?? a.id ?? a.key ?? `Q${i+1}`;
+        const col = `survey_${keySafe(qid)}`;
+        head.push(col);
+        const val = a.answer ?? a.value ?? a.response ?? '';
+        vals.push(val);
+      });
+    } else {
+      const flat = _flatten(survey || {});
+      for (const [k,v] of Object.entries(flat)) {
+        head.push(`survey_${keySafe(k)}`);
+        vals.push(typeof v==='object' ? JSON.stringify(v) : v);
+      }
+    }
+  }
 
   const csv = head.join(',') + '\n' + vals.map(csvEsc).join(',');
   return csv;
@@ -869,6 +890,9 @@ async function uploadCombined(combined){
   const sid = (combined && combined.experiment && combined.experiment.sessionId) || sessionId || (Date.now()+'');
   const dateDir = new Date().toISOString().slice(0,10);
 
+  /* 先解析出问卷对象，供宽表并入使用 */
+  const surveyObj = combined?.survey ?? combined?.questionnaire ?? combined?.form;
+
   if (SAVE_CSV_LONG && combined?.experiment?.rows?.length){
     const csv = makeCsvLong(combined.experiment);
     const csvKey = `${CSV_DIR_LONG}/${dateDir}/${sid}.csv`;
@@ -882,8 +906,9 @@ async function uploadCombined(combined){
     console.log('Uploaded CSV (long, combined) to COS:', csvKey);
   }
 
+  /* ✅ 宽表：把问卷并入同一行 */
   if (SAVE_CSV_WIDE && combined?.experiment?.rows?.length){
-    const csvWide = makeCsvWide(combined.experiment);
+    const csvWide = makeCsvWide(combined.experiment, surveyObj);
     const wideKey = `${CSV_DIR_WIDE}/${dateDir}/${sid}.csv`;
     const csvWideWithBOM = '\ufeff' + csvWide;
     await new Promise((resolve,reject)=>{
@@ -895,8 +920,8 @@ async function uploadCombined(combined){
     console.log('Uploaded CSV (wide, combined) to COS:', wideKey);
   }
 
+  /* 问卷：仍按原逻辑单独上传一份“问卷CSV（长表）” */
   if (SAVE_SURVEY_CSV) {
-    const surveyObj = combined?.survey ?? combined?.questionnaire ?? combined?.form;
     if (surveyObj) {
       const meta = {
         sessionId: sid,

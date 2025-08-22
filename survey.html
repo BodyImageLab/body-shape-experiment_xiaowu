@@ -852,7 +852,7 @@ function validateStep(n){
     const heightCtrl = sec.querySelector('#height');
     if (heightCtrl){
       const v = (heightCtrl.value || '').trim();
-      if (!/^\d\.\d{2}M$/.test(v)){
+      if (!/^\d\.\d{2}$/.test(v)){
         ok = false;
         if(!firstMiss) firstMiss = heightCtrl;
         heightCtrl.classList.add('missing');
@@ -864,7 +864,7 @@ function validateStep(n){
     const weightCtrl = sec.querySelector('#weight');
     if (weightCtrl){
       const v = (weightCtrl.value || '').trim();
-      if (!/^\d{2}\.\d{2}KG$/.test(v)){
+      if (!/^\d{2}\.\d{2}$/.test(v)){
         ok = false;
         if(!firstMiss) firstMiss = weightCtrl;
         weightCtrl.classList.add('missing');

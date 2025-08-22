@@ -411,6 +411,8 @@ let idx = 0, holdTimer = null, holdKey = null, adjusting = false, preloaded = fa
 let practiceTrial = 0, currentTrial = 0, idealTrial = 0;
 let currentStarts = [], idealStarts = [];
 let t0 = 0, startIdx = 0, enterLocked = false, experimentStartTime = 0;
+/* ✅ 新增：记录第一次调整(F/J)时间戳 */
+let tFirstAdjust = null;
 let taskType = '练习';
 let results = [];
 let sessionId = null;
@@ -596,7 +598,7 @@ function makeCsvLong(payload){
   const head = [
     'sessionId','pid','subjectNumber','gender','series',
     'task_type','trial_no','index','bmi','start_index',
-    'response_time','response_duration_ms','selected_image'
+    'response_time','response_duration_ms','adjustment_duration_ms','selected_image'
   ];
   const lines = [ head.join(',') ];
   let cNo=0, iNo=0, pNo=0;
@@ -607,7 +609,7 @@ function makeCsvLong(payload){
     const row = [
       payload.sessionId, payload.pid, payload.subjectNumber, payload.gender, r.series,
       r.task_type, trialNo, r.index, r.bmi, r.start_index,
-      r.response_time, r.response_duration_ms, r.selected_image
+      r.response_time, r.response_duration_ms, r.adjustment_duration_ms, r.selected_image
     ].map(csvEsc).join(',');
     lines.push(row);
   }
@@ -781,6 +783,8 @@ function saveRow(){
     start_index: startIdx,
     response_time: new Date().toISOString(),
     response_duration_ms: Date.now() - t0,
+    /* ✅ 新增：从第一次按下 F/J 到按下 Enter 的用时 */
+    adjustment_duration_ms: (tFirstAdjust==null ? '' : (Date.now() - tFirstAdjust)),
     student_id: (studentIdEl.value||'').trim(),
     subject_number: (subjectNumberEl.value||'').trim(),
     gender
@@ -989,6 +993,8 @@ function startTrial(){
   startIdx = idx;
   updateStimulus();
   t0 = Date.now();
+  /* ✅ 重置第一次调整时间戳 */
+  tFirstAdjust = null;
 }
 
 /* ===== 性别选择 ===== */
@@ -1028,7 +1034,11 @@ window.addEventListener('keydown',(e)=>{
     if (screens.idealG.classList.contains('active') && k===' '){ Object.values(screens).forEach(s=>s.classList.remove('active')); labelIdeal.style.opacity=1; startTrial(); return; }
   }
   if (adjusting){
-    if (k==='f' || k==='j'){ if (holdKey!==k) startHold(k); }
+    if (k==='f' || k==='j'){
+      /* ✅ 第一次按下 F/J 时，记录时间戳 */
+      if (tFirstAdjust === null) tFirstAdjust = Date.now();
+      if (holdKey!==k) startHold(k);
+    }
     else if (k==='r'){ idx = startIdx; pendingIndex = idx; }
     else if (k==='enter'){
       if (enterLocked) return; enterLocked = true;

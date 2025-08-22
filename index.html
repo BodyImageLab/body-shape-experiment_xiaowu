@@ -118,7 +118,7 @@
   #notice .nz-pane h2{margin:0 0 8px 0;font-size:20px}
   #notice .nz-pane p{margin:8px 0 0 0;line-height:1.8;font-size:16px;letter-spacing:.1px}
   #notice .nz-pane ul{margin:8px 0 0 0;padding-left:18px;line-height:1.8;font-size:16px}
-  #notice .nz-pane li{margin:.35em 0;padding左:.2em}
+  #notice .nz-pane li{margin:.35em 0;padding-left:.2em}
   #notice .nz-pane li::marker{color:#ffd86b}
   #notice .nz-muted{color:var(--muted); font-size:13px}
 
@@ -130,7 +130,7 @@
   }
 
   /* 自定义勾选框：透明小方块 → 点击出现金色对号 */
-  #notice .nz-ck{display:flex;alignitems:center;gap:10px}
+  #notice .nz-ck{display:flex;align-items:center;gap:10px}
   #notice .nz-ck input{
     appearance:none; -webkit-appearance:none; -moz-appearance:none;
     width:26px;height:26px;border-radius:6px;
@@ -138,11 +138,14 @@
     background:transparent; cursor:pointer; position:relative;
     transition:.18s border-color,.18s box-shadow;
   }
+  /* 金色描边与焦点态 */
   #notice .nz-ck input:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(242,193,78,.25);border-color:var(--acc)}
   #notice .nz-ck input:hover{border-color:rgba(255,255,255,.45)}
+
+  /* 用两条边绘制“对号”，更稳（不用字体） */
   #notice .nz-ck input::after{
     content:""; position:absolute; left:50%; top:50%;
-    width:8px; height:14px;
+    width:8px; height:14px; /* 对号尺寸 */
     border-right:3px solid var(--acc);
     border-bottom:3px solid var(--acc);
     transform:translate(-50%,-60%) rotate(45deg) scale(0);
@@ -152,8 +155,13 @@
   }
   #notice .nz-ck input:checked{border-color:var(--acc)}
   #notice .nz-ck input:checked::after{opacity:1; transform:translate(-50%,-60%) rotate(45deg) scale(1)}
+
+  /* 全局粒子画布（在哪些页面显示由 JS 决定） */
   #fxCanvas{position:fixed; inset:0; z-index:-1; pointer-events:none}
+
   @media (max-width:900px){ #notice .nz-grid{grid-template-columns:1fr} }
+
+  /* Notice 文案左对齐；小标题居中 */
   #notice .panel,
   #notice .nz-card,
   #notice .nz-head,
@@ -164,17 +172,27 @@
   #notice .nz-pane li { text-align:left; }
   #notice .nz-pane h2 { text-align:center; }
   #notice .nz-pane p, #notice .nz-lead { word-break:break-word; white-space:normal; }
-#surveyEmbed .panel{ padding:0; overflow:hidden; }
-#surveyEmbed .panel > h1, #surveyEmbed .panel > p{ display:none }
-#surveyEmbed iframe{
-  position:absolute; inset:0; width:100vw; height:100dvh; border:0; border-radius:0; background:#111;
+  /* —— 让问卷页全屏铺满 —— */
+#surveyEmbed .panel{
+  padding:0;                      /* 去掉面板内边距 */
+  overflow:hidden;                /* 不要滚动条框 */
 }
+#surveyEmbed .panel > h1,
+#surveyEmbed .panel > p{ display:none }  /* 隐藏“请完成问卷”等标题文案 */
+#surveyEmbed iframe{
+  position:absolute; inset:0;     /* 占满整个视口 */
+  width:100vw; height:100dvh;     /* dvh 适配移动端地址栏 */
+  border:0; border-radius:0; background:#111;
+}
+
 </style>
 </head>
 <body>
 
+<!-- ✅ 全局粒子画布：默认在 notice / guidelines / thankYou 显示 -->
 <canvas id="fxCanvas" aria-hidden="true"></canvas>
 
+<!-- Notice（注意事项） -->
 <section id="notice" class="screen active">
   <div class="panel" role="region" aria-label="实验注意事项">
     <article class="nz-card">
@@ -186,6 +204,7 @@
       <p class="nz-lead"></p>
 
       <section class="nz-grid">
+        <!-- 左：注意事项 -->
         <div class="nz-pane">
           <h2>注意事项</h2>
           <ul>
@@ -197,6 +216,7 @@
           </ul>
         </div>
 
+        <!-- 右：保密原则 -->
         <div class="nz-pane">
           <h2>保密原则</h2>
           <ul>
@@ -214,15 +234,19 @@
           <input id="agree" type="checkbox" aria-label="我已阅读并同意注意事项与保密条款">
           <label for="agree">我已阅读并同意注意事项与保密条款</label>
         </div>
+
+        <!-- 注意：此进度条在点击按钮后才会从 0 → 100% -->
         <div class="bar" aria-hidden="true" style="width:240px;height:15px">
           <span id="noticePg" style="width:0%"></span>
         </div>
+
         <button id="btnNoticeNext" class="btn" disabled>我已阅读，进入实验</button>
       </div>
     </article>
   </div>
 </section>
 
+<!-- 指导语（首页） -->
 <section id="guidelines" class="screen">
   <div class="panel">
     <h1>欢迎您参加本实验！</h1>
@@ -246,6 +270,7 @@
   </div>
 </section>
 
+<!-- 练习/正式指导语 -->
 <section id="practiceGuidelines" class="screen">
   <div class="panel">
     <p>练习阶段（共 3 次）！</p>
@@ -272,6 +297,7 @@
   </div>
 </section>
 
+<!-- 刺激层 -->
 <img id="stimulus" alt="stimulus" decoding="async" loading="eager" fetchpriority="high">
 <div id="fixation">+</div>
 <div class="hint hint-left">长按“F”快速变瘦</div>
@@ -280,6 +306,7 @@
 <div id="idealTypeLabel"><p>调至您的<b>理想体型</b>，按 <b>Enter</b> 确认。</p></div>
 <div id="practicePrompt" class="muted">熟悉后可按 <b>Enter</b> 结束本次练习</div>
 
+<!-- ✅ 新增：问卷内嵌页 -->
 <section id="surveyEmbed" class="screen">
   <div class="panel" style="gap:14px">
     <h1 style="font-size:28px;margin:0">请完成问卷</h1>
@@ -289,6 +316,7 @@
   </div>
 </section>
 
+<!-- 结束页与遮罩 -->
 <section id="thankYou" class="screen">
   <div class="panel">
     <p>请您备注好学号与手机号码后4位后，添加实验主试微信领取实验报酬！！！</p>
@@ -307,6 +335,7 @@
   <button id="btnRetryUpload" class="btn">重试上传</button>
 </div>
 
+<!-- COS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/cos-js-sdk-v5/dist/cos-js-sdk-v5.min.js"></script>
 
 <script>
@@ -315,8 +344,8 @@ const STS_URL    = 'https://bodyshape2025-8gk5msghc2121838-1373390636.ap-shangha
 const COS_BUCKET = 'bodyshape-data-1373390636';
 const COS_REGION = 'ap-shanghai';
 
-/* ✅ 新增：问卷地址 */
-const SURVEY_URL = './survey.html';
+/* ✅ 新增：问卷地址（请替换为你的问卷文件路径/URL） */
+const SURVEY_URL = './survey.html'; // 例：同源下的问卷文件；可换成你的线上地址
 
 /* ===== 图片资源路径 ===== */
 const IS_PROD   = location.hostname.endsWith('github.io');
@@ -335,10 +364,10 @@ const IDEAL_TRIALS    = 10;
 const FIX_MS = 800;
 const HOLD_INTERVAL = 70;
 
-/* ✅ CSV（trial 级长表） */
-const SAVE_CSV_LONG = true;
-const CSV_DIR_LONG  = 'sessions_csv_long';
-/* ✅ 新增（问卷CSV-强化） */
+/* ✅ 新增：CSV（trial 级长表） */
+const SAVE_CSV_LONG = true;                 // 开启长表 CSV 上传
+const CSV_DIR_LONG  = 'sessions_csv_long';  // CSV 在 COS 的目录
+/* ✅ 新增（问卷CSV） */
 const SAVE_SURVEY_CSV = true;
 const CSV_DIR_SURVEY  = 'survey_csv';
 
@@ -349,7 +378,7 @@ const screens = {
   pracG: document.getElementById('practiceGuidelines'),
   currG: document.getElementById('currentGuidelines'),
   idealG: document.getElementById('idealGuidelines'),
-  survey: document.getElementById('surveyEmbed'),
+  survey: document.getElementById('surveyEmbed'), // ✅ 新增
   thank: document.getElementById('thankYou')
 };
 const preloadPg = document.getElementById('preloadPg');
@@ -370,9 +399,9 @@ const practicePrompt = document.getElementById('practicePrompt');
 const studentIdEl = document.getElementById('studentId');
 const subjectNumberEl = document.getElementById('subjectNumber');
 
-/* ✅ 问卷 iframe/通信 */
+/* ✅ 新增：问卷 iframe/通信 */
 const surveyFrame = document.getElementById('surveyFrame');
-let __lastCombined = null;
+let __lastCombined = null; // 存放问卷返回的“实验+问卷”组合，用于失败重传
 
 let gender = null, series = 'F', imgList = [];
 let idx = 0, holdTimer = null, holdKey = null, adjusting = false, preloaded = false;
@@ -384,7 +413,7 @@ let results = [];
 let sessionId = null;
 let pendingIndex = null;
 
-/* ===== Notice 同意 & 进度条 ===== */
+/* ===== Notice：同意后按钮可用；按按钮先跑进度条再进入下一页 ===== */
 const agree = document.getElementById('agree');
 const noticePg = document.getElementById('noticePg');
 
@@ -394,19 +423,26 @@ if (agree && btnNoticeNext){
 
   btnNoticeNext.addEventListener('click', async ()=>{
     if(btnNoticeNext.disabled) return;
+
+    // 禁用按钮，跑进度动画
     btnNoticeNext.disabled = true;
     await runNoticeProgress();
+
+    // ✅ 进入实验前先请求全屏（有用户点击手势，最可靠）
     enterFullscreen();
+
+    // 进度完毕后进入下一页（FX 会随 showScreen 自动切换）
     showScreen('guide');
   });
 }
 
+/* 进度条动画：点击按钮后从 0 → 100% */
 function runNoticeProgress(){
   return new Promise(resolve=>{
     let w = 0;
     noticePg.style.width = '0%';
     const timer = setInterval(()=>{
-      w += 12 + Math.random()*18;
+      w += 12 + Math.random()*18; // 速度可按需调整
       if (w >= 100){
         w = 100;
         clearInterval(timer);
@@ -417,8 +453,15 @@ function runNoticeProgress(){
   });
 }
 
-/* ===== FX 背景 ===== */
+/* ===== 通用粒子 & 涟漪（可按需选择在哪些页面启用） ===== */
+
+/** 👇 在这里控制粒子背景在哪些“页面键”启用。
+ *  页面键是 showScreen(key) 里用的 key：
+ *  notice / guide / pracG / currG / idealG / thank
+ *  想关闭某页，就把相应 key 从集合里删掉即可。
+ */
 const FX_PAGES = new Set(['notice','guide','thank']);
+
 let bgFX = null;
 function mountFX(){
   if (bgFX) return;
@@ -455,6 +498,7 @@ function mountFX(){
     grad.addColorStop(0,'rgba(0,0,0,.08)');
     grad.addColorStop(1,'rgba(0,0,0,.20)');
     ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+
     for(const b of bubbles){
       const ox = (mx*0.06)*(1-b.z)*DPR;
       const oy = (my*0.04)*(1-b.z)*DPR;
@@ -475,13 +519,18 @@ function mountFX(){
   }
   const onResize = ()=>resize();
   const onMove   = (e)=>{ mx = (e.clientX / innerWidth  - .5) * 2; my = (e.clientY / innerHeight - .5) * 2; };
+
+  // 水波涟漪：只在启用 FX 的页面内的按钮上
   const onClick = (e)=>{
+    // 用 section id 选择（注意：这里用的是 DOM id，不是 key）
     const btn = e.target.closest('#notice .btn, #guidelines .btn, #thankYou .btn');
     if(!btn) return;
     const rip = document.createElement('span');
-    rip.style.position='absolute'; rip.style.borderRadius='50%';
+    rip.style.position='absolute';
+    rip.style.borderRadius='50%';
     rip.style.transform='translate(-50%,-50%) scale(0)';
-    rip.style.background='rgba(255,255,255,.55)'; rip.style.pointerEvents='none';
+    rip.style.background='rgba(255,255,255,.55)';
+    rip.style.pointerEvents='none';
     rip.style.left = (e.clientX - btn.getBoundingClientRect().left) + 'px';
     rip.style.top  = (e.clientY - btn.getBoundingClientRect().top)  + 'px';
     const size = Math.max(btn.offsetWidth, btn.offsetHeight);
@@ -491,30 +540,47 @@ function mountFX(){
     requestAnimationFrame(()=>{ rip.style.transform='translate(-50%,-50%) scale(18)'; rip.style.opacity='0'; });
     rip.addEventListener('transitionend', ()=> rip.remove());
   };
+
   window.addEventListener('resize', onResize);
   window.addEventListener('mousemove', onMove, {passive:true});
   document.addEventListener('click', onClick);
+
   resize(); if(!reduce){ draw(); }
-  bgFX = { destroy(){
-    if (rafId) cancelAnimationFrame(rafId);
-    window.removeEventListener('resize', onResize);
-    window.removeEventListener('mousemove', onMove, {passive:true});
-    document.removeEventListener('click', onClick);
-    const c = document.getElementById('fxCanvas'); if (c){ const ctx2=c.getContext('2d'); ctx2 && ctx2.clearRect(0,0,c.width,c.height); }
-    bgFX = null;
-  }};
+
+  bgFX = {
+    destroy(){
+      if (rafId) cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('mousemove', onMove, {passive:true});
+      document.removeEventListener('click', onClick);
+      const c = document.getElementById('fxCanvas');
+      if (c){ const ctx2=c.getContext('2d'); ctx2 && ctx2.clearRect(0,0,c.width,c.height); }
+      bgFX = null;
+    }
+  };
 }
 function unmountFX(){ if (bgFX) bgFX.destroy(); }
-function maybeToggleFXFor(screenKey){ if (FX_PAGES.has(screenKey)) mountFX(); else unmountFX(); }
+
+/* 根据当前屏的 key 决定是否启用粒子 */
+function maybeToggleFXFor(screenKey){
+  if (FX_PAGES.has(screenKey)) mountFX(); else unmountFX();
+}
 
 /* ===== 工具函数 ===== */
 function enterFullscreen(){ const el=document.documentElement; if (el.requestFullscreen) el.requestFullscreen().catch(()=>{}); }
+
+/* 切屏：统一在这里控制 FX 的开关 */
 function showScreen(key){
   Object.values(screens).forEach(s=>s.classList.remove('active'));
   screens[key].classList.add('active');
   maybeToggleFXFor(key);
 }
-{ const activeKey = Object.entries(screens).find(([k,el])=>el.classList.contains('active'))?.[0] || 'notice'; maybeToggleFXFor(activeKey); }
+
+/* 初始化：根据默认 active 的屏决定是否开启 FX */
+{
+  const activeKey = Object.entries(screens).find(([k,el])=>el.classList.contains('active'))?.[0] || 'notice';
+  maybeToggleFXFor(activeKey);
+}
 
 /* ===== 预加载 ===== */
 function genNames(prefix, n, ext){ const a=[]; for (let i=1;i<=n;i++) a.push(`${prefix}${i}.${ext}`); return a; }
@@ -540,7 +606,7 @@ function bmiFromIndex(series, index){
   else { return +(11.8 + index * 0.472).toFixed(2); }
 }
 
-/* ===== CSV 工具（trial 级长表） ===== */
+/* ✅ 新增：CSV 工具（trial 级长表） */
 function csvEsc(v){ return `"${String(v ?? '').replace(/"/g,'""')}"`; }
 function makeCsvLong(payload){
   const head = [
@@ -553,7 +619,7 @@ function makeCsvLong(payload){
   for(const r of (payload.rows||[])){
     const trialNo = r.task_type==='当前体型' ? ++cNo
                   : r.task_type==='理想体型' ? ++iNo
-                  : ++pNo;
+                  : ++pNo; // 练习
     const row = [
       payload.sessionId, payload.pid, payload.subjectNumber, payload.gender, r.series,
       r.task_type, trialNo, r.index, r.bmi, r.start_index,
@@ -564,7 +630,7 @@ function makeCsvLong(payload){
   return lines.join('\n');
 }
 
-/* ✅ 新增（问卷CSV-强化）：通用扁平化 + 生成问卷CSV + 自动探测问卷对象 */
+/* ✅ 新增（问卷CSV）：通用扁平化 + 生成问卷CSV */
 function _flatten(obj, prefix = '', out = {}) {
   if (obj === null || obj === undefined) return out;
   if (Array.isArray(obj)) {
@@ -580,27 +646,27 @@ function _flatten(obj, prefix = '', out = {}) {
 }
 function makeSurveyCsv(meta, survey) {
   const _esc = (v)=>`"${String(v ?? '').replace(/"/g,'""')}"`;
-  const answers = Array.isArray(survey?.answers) ? survey.answers
-                 : Array.isArray(survey?.responses) ? survey.responses
-                 : Array.isArray(survey?.items) ? survey.items
-                 : Array.isArray(survey) ? survey
-                 : null;
+  // 情形 A：answers 数组
+  const answers = Array.isArray(survey?.answers) ? survey.answers : null;
   if (answers && answers.length) {
     const head = ['sessionId','pid','subjectNumber','gender','item_no','qid','question','label','answer'];
     const lines = [ head.join(',') ];
     let i = 0;
     for (const a of answers) {
       i++;
-      const qid      = a.qid ?? a.id ?? a.key ?? a.name ?? '';
-      const question = a.question ?? a.title ?? a.text ?? a.label ?? '';
+      const qid      = a.qid ?? a.id ?? a.key ?? '';
+      const question = a.question ?? a.title ?? a.text ?? '';
       const label    = a.label ?? a.optionLabel ?? '';
-      const answer   = a.answer ?? a.value ?? a.response ?? a.selected ?? a.choice ?? (typeof a === 'string' ? a : '');
-      const row = [meta.sessionId, meta.pid, meta.subjectNumber, meta.gender, i, qid, question, label, answer]
-        .map(_esc).join(',');
+      const answer   = a.answer ?? a.value ?? a.response ?? '';
+      const row = [
+        meta.sessionId, meta.pid, meta.subjectNumber, meta.gender,
+        i, qid, question, label, answer
+      ].map(_esc).join(',');
       lines.push(row);
     }
     return lines.join('\n');
   }
+  // 情形 B：任意对象 → 扁平化为 key-value
   const flat = _flatten(survey || {});
   const head = ['sessionId','pid','subjectNumber','gender','key','value'];
   const lines = [ head.join(',') ];
@@ -610,52 +676,6 @@ function makeSurveyCsv(meta, survey) {
     lines.push(row);
   }
   return lines.join('\n');
-}
-function _getByPath(obj, path) {
-  try {
-    return path.split('.').reduce((o, k)=>{
-      if (!o) return undefined;
-      if (k.endsWith(']')) { // arr[index]
-        const m = k.match(/^(.+)\[(\d+)\]$/);
-        if (!m) return o[k];
-        return o[m[1]]?.[Number(m[2])];
-      }
-      return o[k];
-    }, obj);
-  } catch { return undefined; }
-}
-/* 关键：更鲁棒的问卷对象自动探测 */
-function resolveSurveyObject(combined){
-  if (!combined) return null;
-  // 1) 如果 payload 直接就是问卷数组
-  if (Array.isArray(combined)) return combined;
-  // 2) 常见路径集合（尽可能覆盖）
-  const candidates = [
-    'survey', 'questionnaire', 'form', 'surveyData', 'surveyResult', 'survey_result',
-    'answers', 'responses', 'result', 'results', 'data', 'payload',
-    'survey.answers', 'survey.responses', 'questionnaire.answers', 'questionnaire.responses',
-    'data.survey', 'data.answers', 'data.responses',
-    'form.answers', 'form.responses',
-    'response', 'response.data'
-  ];
-  for (const p of candidates) {
-    let v = _getByPath(combined, p);
-    if (typeof v === 'string') {
-      const s = v.trim();
-      if ((s.startsWith('{') && s.endsWith('}')) || (s.startsWith('[') && s.endsWith(']'))) {
-        try { v = JSON.parse(s); } catch {}
-      }
-    }
-    if (v && (typeof v === 'object' || Array.isArray(v))) {
-      return v;
-    }
-  }
-  // 3) 有时问卷包裹在 combined.data 内，再进一步找
-  if (combined.data && typeof combined.data === 'object') {
-    const deep = resolveSurveyObject(combined.data);
-    if (deep) return deep;
-  }
-  return null;
 }
 
 /* ===== 呈现/索引 ===== */
@@ -699,7 +719,7 @@ function startHold(which){ stopHold(); const delta=(which==='f')?-1:+1; step(del
 function stopHold(){ if (holdTimer){ clearInterval(holdTimer); holdTimer=null; } holdKey=null; }
 function step(delta){ if (!adjusting) return; idx = clamp(idx + delta, 0, imgList.length-1); pendingIndex = idx; }
 
-/* ===== 渲染循环 ===== */
+/* ===== 渲染循环（切图更顺滑） ===== */
 function renderLoop(){ if (pendingIndex !== null){ stimulus.src = imgList[pendingIndex]; pendingIndex = null; } requestAnimationFrame(renderLoop); }
 renderLoop();
 
@@ -712,9 +732,9 @@ function showUploadFailedOverlay(msg){
     el.style.display='none'; showUploadingOverlay();
     try{
       if (__lastCombined){
-        await uploadCombined(__lastCombined);
+        await uploadCombined(__lastCombined); // ✅ 重试“组合数据”上传
       } else {
-        await uploadAllResults();
+        await uploadAllResults(); // 兼容旧路径
       }
       hideUploadingOverlay(); showScreen('thank');
     }
@@ -726,6 +746,8 @@ function showUploadFailedOverlay(msg){
 function buildPayload(){
   return { sessionId, pid: (studentIdEl.value||'').trim(), subjectNumber: (subjectNumberEl.value||'').trim(), gender, rows: results };
 }
+
+/* ======= 仅 CSV：去除 JSON 上传 ======= */
 async function uploadAllResults(){
   const payload = buildPayload();
   const sts = await fetch(STS_URL).then(r=>r.json());
@@ -738,14 +760,10 @@ async function uploadAllResults(){
       ExpiredTime: Math.floor(Date.now()/1000) + 600
     }) });
   const dateDir = new Date().toISOString().slice(0,10);
-  const key = `sessions/${dateDir}/${payload.sessionId}.json`;
-  await new Promise((resolve,reject)=>{
-    cos.putObject({ Bucket: COS_BUCKET, Region: COS_REGION, Key: key,
-      Body: new Blob([JSON.stringify(payload)], { type:'application/json' })
-    }, (err,data)=>err?reject(err):resolve(data));
-  });
-  console.log('Uploaded to COS:', key);
 
+  let csvKey = null;
+
+  /* 仅上传：trial 级 CSV（长表） */
   if (SAVE_CSV_LONG){
     const csv = makeCsvLong({
       sessionId: payload.sessionId,
@@ -754,8 +772,9 @@ async function uploadAllResults(){
       gender: payload.gender,
       rows: payload.rows
     });
-    const csvKey = `${CSV_DIR_LONG}/${dateDir}/${payload.sessionId}.csv`;
-    const csvWithBOM = '\ufeff' + csv;
+    csvKey = `${CSV_DIR_LONG}/${dateDir}/${payload.sessionId}.csv`;
+    const csvWithBOM = '\ufeff' + csv; // Excel 友好
+
     await new Promise((resolve,reject)=>{
       cos.putObject({
         Bucket: COS_BUCKET, Region: COS_REGION, Key: csvKey,
@@ -765,10 +784,10 @@ async function uploadAllResults(){
     console.log('Uploaded CSV (long) to COS:', csvKey);
   }
 
-  return key;
+  return csvKey;
 }
 
-/* ✅ 上传“问卷+实验”的合并对象（含问卷CSV-强化） */
+/* ======= 仅 CSV：去除合并 JSON 上传 ======= */
 async function uploadCombined(combined){
   const sts = await fetch(STS_URL).then(r=>r.json());
   if (!sts.ok) throw new Error(sts.error || 'Get STS failed');
@@ -782,18 +801,13 @@ async function uploadCombined(combined){
 
   const sid = (combined && combined.experiment && combined.experiment.sessionId) || sessionId || (Date.now()+'');
   const dateDir = new Date().toISOString().slice(0,10);
-  const key = `sessions_combined/${dateDir}/${sid}.json`;
-  await new Promise((resolve,reject)=>{
-    cos.putObject({ Bucket: COS_BUCKET, Region: COS_REGION, Key: key,
-      Body: new Blob([JSON.stringify(combined)], { type:'application/json' })
-    }, (err,data)=>err?reject(err):resolve(data));
-  });
-  console.log('Uploaded combined to COS:', key);
 
+  /* 实验行：trial 级 CSV */
   if (SAVE_CSV_LONG && combined?.experiment?.rows?.length){
     const csv = makeCsvLong(combined.experiment);
     const csvKey = `${CSV_DIR_LONG}/${dateDir}/${sid}.csv`;
     const csvWithBOM = '\ufeff' + csv;
+
     await new Promise((resolve,reject)=>{
       cos.putObject({
         Bucket: COS_BUCKET, Region: COS_REGION, Key: csvKey,
@@ -803,20 +817,15 @@ async function uploadCombined(combined){
     console.log('Uploaded CSV (long, combined) to COS:', csvKey);
   }
 
-  /* ✅ 新增（问卷CSV-强化）：自动探测问卷对象并上传 CSV */
+  /* 问卷：CSV */
   if (SAVE_SURVEY_CSV) {
-    // 兼容 payload 直接挂在 combined.payload 的情况
-    const root = combined?.payload && typeof combined.payload === 'object'
-      ? combined.payload
-      : combined;
-
-    const surveyObj = resolveSurveyObject(root);
+    const surveyObj = combined?.survey ?? combined?.questionnaire ?? combined?.form;
     if (surveyObj) {
       const meta = {
         sessionId: sid,
-        pid: combined?.experiment?.pid ?? combined?.payload?.experiment?.pid ?? '',
-        subjectNumber: combined?.experiment?.subjectNumber ?? combined?.payload?.experiment?.subjectNumber ?? '',
-        gender: combined?.experiment?.gender ?? combined?.payload?.experiment?.gender ?? ''
+        pid: combined?.experiment?.pid ?? '',
+        subjectNumber: combined?.experiment?.subjectNumber ?? '',
+        gender: combined?.experiment?.gender ?? ''
       };
       const surveyCsv = makeSurveyCsv(meta, surveyObj);
       const surveyCsvWithBOM = '\ufeff' + surveyCsv;
@@ -829,26 +838,32 @@ async function uploadCombined(combined){
       });
       console.log('Uploaded CSV (survey) to COS:', surveyCsvKey);
     } else {
-      console.warn('[survey-csv] 未找到问卷对象，已跳过。combined 顶层键：', Object.keys(root||{}));
+      console.log('No survey object found on combined payload; skip survey CSV.');
     }
   }
-
-  return key;
 }
 
-/* 进入问卷并传递实验数据 */
+/* ✅ 进入问卷、传递实验数据，并等待问卷回传组合数据后上传 */
 function proceedToSurvey(){
+  // 1) 构造实验数据
   const exp = buildPayload();
+
+  // 2) 简单缓存到 sessionStorage（问卷页也会尝试读取这些兜底键）
   try{
     sessionStorage.setItem('experiment_data', JSON.stringify(exp));
     sessionStorage.setItem('exp_data', JSON.stringify(exp));
     sessionStorage.setItem('exp:'+exp.sessionId, JSON.stringify(exp));
   }catch(_){}
+
+  // 3) 打开问卷页
   surveyFrame.src = SURVEY_URL;
-  showScreen('survey'); enterFullscreen();
+  showScreen('survey');enterFullscreen(); // 再尝试全屏，已全屏则忽略
+
+  // 4) 问卷加载后，发送实验数据（postMessage）
   surveyFrame.addEventListener('load', ()=>{
     try{
       surveyFrame.contentWindow.postMessage({ type:'EXPERIMENT_DATA', payload: exp }, '*');
+      // 再次发送一次，避免某些浏览器 load 早于问卷脚本装载
       setTimeout(()=>{ try{ surveyFrame.contentWindow.postMessage({ type:'EXPERIMENT_DATA', payload: exp }, '*'); }catch(_){} }, 500);
     }catch(_){}
   }, { once:true });
@@ -938,6 +953,7 @@ window.addEventListener('keydown',(e)=>{
           idealTrial++;
           if (idealTrial < IDEAL_TRIALS) startTrial();
           else {
+            // 实验结束：上传 CSV，然后进入问卷
             stimulus.style.display='none';
             document.body.classList.remove('hide-cursor');
             showUploadingOverlay();
@@ -957,10 +973,12 @@ window.addEventListener('keydown',(e)=>{
 });
 window.addEventListener('keyup',(e)=>{ const k = e.key.toLowerCase(); if (k==='f' || k==='j') stopHold(); if (k==='enter') enterLocked = false; });
 
-/* ✅ 接收问卷页回传，统一上传到 COS */
+/* ✅ 新增：接收问卷页回传，统一上传到 COS */
 window.addEventListener('message', async (e)=>{
   const msg = e.data || {};
   if (!msg || typeof msg !== 'object') return;
+
+  // 问卷已提交，带回“实验+问卷”的组合数据
   if (msg.type === 'SURVEY_READY_TO_UPLOAD' && msg.payload){
     try{
       __lastCombined = msg.payload;

@@ -466,7 +466,6 @@
 const IS_EMBEDDED = (window.top !== window.self);
 
 // ========== 1) 配置 ==========
-// （保持原有）
 const FORM_ID = (()=>{ const d=new Date(); return 'Q-' + d.toISOString().replace(/[-:TZ.]/g,'').slice(0,14) + '-' + Math.random().toString(36).slice(2,6).toUpperCase(); })();
 const SUBMIT_ENDPOINT = 'survey.html';// 可填入你的后端 URL
 const DRAFT_KEY = 'survey-draft-experimentstyle-v1';
@@ -767,18 +766,14 @@ document.addEventListener('change', (e)=>{
   }
 });
 
-/* ========== ✅ 与 COS 的统一上传（已改为 CSV） ========== */
+/* ========== ✅ 与 COS 的统一上传（保留原函数，不改动逻辑，但提交时不再调用） ========== */
 function getSessionIdFromCombined(combined){
-  // 优先使用实验页生成的 sessionId，以保持与实验一致
   const exp = combined && combined.experiment;
   return (exp && (exp.sessionId || exp.pid)) || ('SURVEY_' + FORM_ID);
 }
 async function uploadCombinedToCOS(combined){
-  // 1) 获取临时密钥
   const sts = await fetch(STS_URL).then(r=>r.json());
   if (!sts || !sts.ok) throw new Error((sts && sts.error) || 'Get STS failed');
-
-  // 2) 初始化 COS
   const cos = new COS({
     getAuthorization: (options, cb) => cb({
       TmpSecretId:  sts.credentials.TmpSecretId,
@@ -788,27 +783,20 @@ async function uploadCombinedToCOS(combined){
       ExpiredTime: Math.floor(Date.now()/1000) + 600
     })
   });
-
-  // 3) 目录与文件名（仅将后缀改为 .csv）
   const dateDir = new Date().toISOString().slice(0,10);
   const sid = getSessionIdFromCombined(combined);
-  const key = `sessions/${dateDir}/${sid}_combined.csv`;   /* ✅ 改为 CSV */
-
-  // 4) 生成 CSV 文本：用页面已有的 toCSV，把问卷对象转为单行 CSV
+  const key = `sessions/${dateDir}/${sid}_combined.csv`;
   const surveyObj = (combined && combined.survey) ? combined.survey : serialize();
-  const csvText = '\ufeff' + toCSV(surveyObj);             /* ✅ 加 BOM 防止 Excel 乱码 */
-
-  // 5) 上传 CSV
+  const csvText = '\ufeff' + toCSV(surveyObj);
   await new Promise((resolve,reject)=>{
     cos.putObject({
       Bucket: COS_BUCKET,
       Region: COS_REGION,
       Key: key,
-      Body: new Blob([csvText], { type:'text/csv;charset=utf-8' })   /* ✅ CSV MIME */
+      Body: new Blob([csvText], { type:'text/csv;charset=utf-8' })
     }, (err,data)=> err ? reject(err) : resolve(data));
   });
-
-  console.log('Uploaded combined CSV to COS:', key);       /* ✅ 日志文案同步 */
+  console.log('Uploaded combined CSV to COS:', key);
   return key;
 }
 
@@ -831,23 +819,57 @@ form.addEventListener('submit', async (e)=>{
   /* 告知父页：问卷完成（若嵌入在实验页可用） */
   parent.postMessage({type:'SURVEY_DONE', payload: data}, '*');
 
-  /* 合并“实验数据”与问卷，统一上传到 COS（已改为 CSV） */
+  /* ✅ 新增：把整张问卷转成 answers[]，并把 experiment + survey 一起回传父页面
+     —— 父页面会用 makeCsvWide() 把问卷字段并入“同一行宽表”并上传 */
   const exp = loadExperimentData(); // 可能为 null
-  const combined = {
-    __meta: { ...data.__meta, kind:'survey+experiment', pid: FORM_ID },
-    survey: data,
-    experiment: exp ?? null
-  };
 
-  try{
-    const cosKey = await uploadCombinedToCOS(combined);
-    parent.postMessage({type:'SURVEY_UPLOAD_OK', payload:{key:cosKey}}, '*');
-  }catch(err){
-    console.error('Upload to COS failed:', err);
-    parent.postMessage({type:'SURVEY_UPLOAD_FAIL', error: (err && err.message) ? err.message : String(err)}, '*');
-    // 不打断页面的后续本地导出操作
+  /* ✅ 新增：从表单构建 answers 数组（qid 为控件 name；answer 为值） */
+  function buildAnswersFromForm(formEl){
+    const answers = [];
+    const seen = new Set();
+    const add = (qid, answer, label, question) => {
+      answers.push({ qid, answer, label: label || '', question: question || '' });
+    };
+    const elements = formEl.querySelectorAll('input, textarea, select');
+    elements.forEach(el => {
+      const name = el.name?.trim();
+      if (!name) return;
+      if (seen.has(name)) return;
+      seen.add(name);
+
+      if (el.type === 'radio') {
+        const checked = formEl.querySelector(`input[type="radio"][name="${CSS.escape(name)}"]:checked`);
+        add(name, checked ? checked.value : '');
+      } else if (el.type === 'checkbox') {
+        const checkedAll = Array.from(formEl.querySelectorAll(`input[type="checkbox"][name="${CSS.escape(name)}"]:checked`)).map(i => i.value);
+        add(name, checkedAll.join('|'));
+      } else if (el.tagName === 'SELECT') {
+        if (el.multiple) {
+          const vals = Array.from(el.selectedOptions).map(o=>o.value);
+          add(name, vals.join('|'));
+        } else {
+          add(name, el.value ?? '');
+        }
+      } else {
+        add(name, el.value ?? '');
+      }
+    });
+    return answers;
   }
 
+  const answers = buildAnswersFromForm(form);
+
+  /* ✅ 修改：不在问卷页自行上传合并文件；改为把 payload 发给父页，
+     由父页现有 uploadCombined() 生成“单行合并 CSV”并上传。 */
+  parent.postMessage({
+    type: 'SURVEY_READY_TO_UPLOAD',
+    payload: {
+      experiment: exp ?? null,
+      survey: { answers }
+    }
+  }, '*');
+
+  // ===== 下载按钮等保持原样 =====
   document.getElementById('download-json').onclick = ()=>{
     const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
     const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=FORM_ID + '.json'; a.click(); URL.revokeObjectURL(a.href);

@@ -237,13 +237,42 @@
   flex-direction:column;
   padding:28px;
 }
-/* 隐藏下载相关控件（稳妥做法：按钮仍在 DOM，不影响现有 JS） */
 #download-json,
 #download-csv,
 #print-pdf,
 #result .bd .tip{
   display:none !important;
 }
+/* === 只改题目为黄色；评分数字与说明保持白色 === */
+:root{
+  --q-color:#ffd86b;          /* 题目黄 */
+  --q-size-label:16px;        /* 基本信息题目字号 */
+  --q-size-qtext:20px;        /* 量表题干字号 */
+}
+
+/* Step 1 基本信息里的题目（输入框上方那行） */
+.qcard.step-sec[data-step="1"] .bd .grid > div > label{
+  color: var(--q-color);
+  font-size: var(--q-size-label);
+}
+
+/* 各量表题干（renderLikertList 生成的 .q-text） */
+.q-text{
+  color: var(--q-color);
+  font-size: var(--q-size-qtext);
+}
+
+/* 保证评分数字与说明为白色（未选/选中都白） */
+.dot .circle,
+.dot em{
+  color: var(--txt);
+}
+.dot input:checked + .circle{
+  color: var(--txt); /* 覆盖原先选中时变深色的规则 */
+}
+
+/* 避免把“男/女”等选项文字染黄 */
+label.radio{ color: var(--txt); }
 
 </style>
 </head>
@@ -277,7 +306,9 @@
             <div class="grid">
               <div>
                 <label for="age">1. 年龄<span style="color:#ffd86b">*</span></label>
-                <input id="age" name="age" type="number" min="10" max="100" placeholder="例如 20" required />
+                <!-- 修改：两位数字 -->
+                <input id="age" name="age" type="text" inputmode="numeric"
+                       placeholder="例如 20" required minlength="2" maxlength="2" pattern="^\d{2}$" />
                 <div class="err" data-err="age">必填</div>
               </div>
               <div>
@@ -290,7 +321,9 @@
               </div>
               <div>
                 <label for="major">2. 专业<span style="color:#ffd86b">*</span></label>
-                <input id="major" name="major" type="text" placeholder="例如 心理学" required />
+                <!-- 修改：仅中文 -->
+                <input id="major" name="major" type="text" placeholder="例如 心理学" required
+                       pattern="^[\u4E00-\u9FFF·\s]+$" />
                 <div class="err" data-err="major">必填</div>
               </div>
               <div>
@@ -304,7 +337,9 @@
               
               <div>
                 <label for="studentId">3. 学号<span style="color:#ffd86b">*</span></label>
-                <input id="studentId" name="studentId" type="text" placeholder="请输入学号" required />
+                <!-- 修改：严格 11 位数字 -->
+                <input id="studentId" name="studentId" type="text" placeholder="请准确输入11位学号" required
+                       inputmode="numeric" minlength="11" maxlength="11" pattern="^\d{11}$" />
                 <div class="err" data-err="studentId">必填</div>
               </div>
               <div>
@@ -315,11 +350,16 @@
                 </div>
                 <div class="err" data-err="origin">必选</div>
               </div>
+
+              <!-- ⇩⇩⇩ 仅此处修改：改为“长栏”单输入，自动格式化为 1.75M ⇩⇩⇩ -->
               <div>
-                <label for="height">4. 身高（cm）<span style="color:#ffd86b">*</span></label>
-                <input id="height" name="height_cm" type="number" min="100" max="250" placeholder="例如 170" required />
+                <label for="height">4. 身高（m）<span style="color:#ffd86b">*</span></label>
+                <input id="height" name="height_cm" type="text" inputmode="numeric"
+                       placeholder="例如 1.75" required />
                 <div class="err" data-err="height_cm">必填</div>
               </div>
+              <!-- ⇧⇧⇧ 仅此处修改 ⇧⇧⇧ -->
+
               <div>
                 <label>11. 年级<span style="color:#ffd86b">*</span></label>
                 <div class="opts">
@@ -331,11 +371,16 @@
                 </div>
                 <div class="err" data-err="grade">必选</div>
               </div>
+
+              <!-- ⇩⇩⇩ 仅此处修改：改为“长栏”单输入，自动格式化为 45.20KG ⇩⇩⇩ -->
               <div>
                 <label for="weight">5. 体重（kg）<span style="color:#ffd86b">*</span></label>
-                <input id="weight" name="weight_kg" type="number" min="30" max="200" placeholder="例如 60" required />
+                <input id="weight" name="weight_kg" type="text" inputmode="numeric"
+                       placeholder="例如 45.20" required />
                 <div class="err" data-err="weight_kg">必填</div>
               </div>
+              <!-- ⇧⇧⇧ 仅此处修改 ⇧⇧⇧ -->
+
               <div>
   <label for="ethnicity">10. 民族<span style="color:#ffd86b">*</span></label>
   <select id="ethnicity" name="ethnicity" required>
@@ -395,7 +440,7 @@
           <div class="hd">
             <div class="title" style="font-size:18px">
               <span class="badge" style="font-size:12px">STEP 3</span>
-              体重偏见内化量表（7 点，11 题）
+              下列是一些对于自身行为的看法和感觉，请你仔细阅读每一个问题，对照自己与每一项的符合程度，尽量快速如实地回答。
             </div>
           </div>
           <div class="bd">
@@ -413,7 +458,7 @@
           <div class="hd">
             <div class="title" style="font-size:18px">
               <span class="badge" style="font-size:12px">STEP 4</span>
-              身体监控量表（7 点，8 题）
+              请认真阅读下面每个条目，并选择其陈述与您的实际情况最为相符的选项。
             </div>
           </div>
           <div class="bd">
@@ -669,6 +714,79 @@ renderLikertList('blockWB','WB', SCALE_WB.labels, SCALE_WB.items);   // Step 3
 renderLikertList('blockBM','BM', SCALE_BM.labels, SCALE_BM.items);   // Step 4
 renderLikertList('blockB','B', SCALE_B.labels, SCALE_B.items);       // Step 5
 
+/* === 新增：Step1 实时输入过滤（确保键入即合规） === */
+(function enforceInputs(){
+  const age = document.getElementById('age');
+  const major = document.getElementById('major');
+  const sid = document.getElementById('studentId');
+
+  if (age){
+    age.addEventListener('input', ()=>{
+      age.value = age.value.replace(/\D/g,'').slice(0,2); // 只留数字，最多2位
+    });
+    age.addEventListener('blur', ()=>{
+      if (age.value){
+        let n = parseInt(age.value,10);
+        if (isNaN(n)) return;
+        if (n < 10) n = 10;
+        if (n > 99) n = 99;
+        age.value = String(n).padStart(2,'0').slice(-2);
+      }
+    });
+  }
+  if (major){
+    major.addEventListener('input', ()=>{
+      // 只保留中文汉字、间隔点与空格
+      major.value = major.value.replace(/[^\u4E00-\u9FFF·\s]/g,'');
+    });
+  }
+  if (sid){
+    sid.addEventListener('input', ()=>{
+      sid.value = sid.value.replace(/\D/g,'').slice(0,11); // 只留数字，最多11位
+    });
+  }
+
+  /* === 新增：身高/体重自动格式化（长栏内保持当前数字输入方式） === */
+  // 身高：3 位数字 => X.YZ + 'M'
+  const height = document.getElementById('height');
+  if (height){
+    const fmtH = (digits)=>{
+      digits = String(digits || '').replace(/\D/g,'').slice(0,3);
+      if(!digits) return '';
+      let s = digits[0];
+      if(digits.length >= 2) s += '.' + digits.slice(1);
+      return s ;
+    };
+    height.addEventListener('input', ()=>{
+      const raw = height.value.replace(/\D/g,'');
+      height.value = fmtH(raw);
+    });
+    height.addEventListener('blur', ()=>{
+      const raw = height.value.replace(/\D/g,'').slice(0,3);
+      if(raw) height.value = fmtH(raw);
+    });
+  }
+
+  // 体重：4 位数字 => XY.ZW + 'KG'
+  const weight = document.getElementById('weight');
+  if (weight){
+    const fmtW = (digits)=>{
+      digits = String(digits || '').replace(/\D/g,'').slice(0,4);
+      if(!digits) return '';
+      if(digits.length <= 2) return digits;
+      return digits.slice(0,2) + '.' + digits.slice(2) ;
+    };
+    weight.addEventListener('input', ()=>{
+      const raw = weight.value.replace(/\D/g,'');
+      weight.value = fmtW(raw);
+    });
+    weight.addEventListener('blur', ()=>{
+      const raw = weight.value.replace(/\D/g,'').slice(0,4);
+      if(raw) weight.value = fmtW(raw);
+    });
+  }
+})();
+
 /* ✅ 增强版校验（红框高亮 + 就地提示 + 自动滚到第一处漏答） */
 function validateStep(n){
   const sec = document.querySelector(`section.step-sec[data-step="${n}"]`);
@@ -691,6 +809,70 @@ function validateStep(n){
       if(errEl) errEl.style.display = 'block';
     }
   });
+
+  /* === 新增：仅 Step 1 的硬性规则 === */
+  if (n === 1){
+    const age = sec.querySelector('#age');
+    if (age){
+      const v = (age.value||'').trim();
+      if (!/^\d{2}$/.test(v) || +v < 10 || +v > 99){
+        ok = false;
+        if(!firstMiss) firstMiss = age;
+        age.classList.add('missing');
+        const errEl = sec.querySelector('[data-err="age"]');
+        if (errEl){ errEl.textContent = '请输入两位数字（10–99）'; errEl.style.display = 'block'; }
+      }
+    }
+
+    const major = sec.querySelector('#major');
+    if (major){
+      const v = (major.value||'').trim();
+      if (!/^[\u4E00-\u9FFF·\s]+$/.test(v)){
+        ok = false;
+        if(!firstMiss) firstMiss = major;
+        major.classList.add('missing');
+        const errEl = sec.querySelector('[data-err="major"]');
+        if (errEl){ errEl.textContent = '专业仅限中文字符'; errEl.style.display = 'block'; }
+      }
+    }
+
+    const sid = sec.querySelector('#studentId');
+    if (sid){
+      const v = (sid.value||'').trim();
+      if (!/^\d{11}$/.test(v)){
+        ok = false;
+        if(!firstMiss) firstMiss = sid;
+        sid.classList.add('missing');
+        const errEl = sec.querySelector('[data-err="studentId"]');
+        if (errEl){ errEl.textContent = '学号需为 11 位数字'; errEl.style.display = 'block'; }
+      }
+    }
+
+    /* === 新增：身高/体重的格式校验 === */
+    const heightCtrl = sec.querySelector('#height');
+    if (heightCtrl){
+      const v = (heightCtrl.value || '').trim();
+      if (!/^\d\.\d{2}M$/.test(v)){
+        ok = false;
+        if(!firstMiss) firstMiss = heightCtrl;
+        heightCtrl.classList.add('missing');
+        const errEl = sec.querySelector('[data-err="height_cm"]');
+        if (errEl){ errEl.textContent = '请输入 3 位数字（形如 1.75M）'; errEl.style.display = 'block'; }
+      }
+    }
+
+    const weightCtrl = sec.querySelector('#weight');
+    if (weightCtrl){
+      const v = (weightCtrl.value || '').trim();
+      if (!/^\d{2}\.\d{2}KG$/.test(v)){
+        ok = false;
+        if(!firstMiss) firstMiss = weightCtrl;
+        weightCtrl.classList.add('missing');
+        const errEl = sec.querySelector('[data-err="weight_kg"]');
+        if (errEl){ errEl.textContent = '请输入 4 位数字（形如 45.20KG）'; errEl.style.display = 'block'; }
+      }
+    }
+  }
 
   // 2) 单选题组（Likert & 基本信息单选）
   const radioNames = new Set(Array.from(sec.querySelectorAll('input[type=radio][name]')).map(x=>x.name));
@@ -820,7 +1002,7 @@ form.addEventListener('submit', async (e)=>{
   parent.postMessage({type:'SURVEY_DONE', payload: data}, '*');
 
   /* ✅ 新增：把整张问卷转成 answers[]，并把 experiment + survey 一起回传父页面
-     —— 父页面会用 makeCsvWide() 把问卷字段并入“同一行宽表”并上传 */
+     —— 父页面会用 makeCsvWide() 把问卷字段并入“同一行宽表”并上传。 */
   const exp = loadExperimentData(); // 可能为 null
 
   /* ✅ 新增：从表单构建 answers 数组（qid 为控件 name；answer 为值） */

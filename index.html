@@ -124,7 +124,7 @@
 
   /* 底部操作区 */
   #notice .nz-actions{
-    display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
+    display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify内容:space-between;
     background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
     border-radius:14px; padding:12px 14px; margin-top:14px
   }
@@ -373,6 +373,8 @@ const CSV_DIR_SURVEY  = 'survey_csv';
 /* ✅ 新增：单行汇总 CSV */
 const SAVE_CSV_WIDE = true;
 const CSV_DIR_WIDE  = 'sessions_csv_wide';
+/* ✅ 新增：把宽表延迟到问卷回传后再上传（从而与问卷字段同在一行） */
+const DEFER_WIDE_UNTIL_SURVEY = true;
 
 /* ===== DOM/状态 ===== */
 const screens = {
@@ -616,7 +618,7 @@ function makeCsvLong(payload){
   return lines.join('\n');
 }
 
-/* ===== 单行汇总 CSV（宽表）— 已新增 6 个统计量，并把问卷并入同一行 ===== */
+/* ===== 单行汇总 CSV（宽表）— 把问卷并入同一行 ===== */
 function makeCsvWide(payload, survey){
   const rows = payload.rows || [];
   const seriesVal = (rows[0] && rows[0].series) || '';
@@ -639,7 +641,7 @@ function makeCsvWide(payload, survey){
     }
   }
 
-  // ===== 新增统计量（均值/标准差/时间均值） =====
+  // 统计量
   const curRows = rows.filter(r=>r.task_type==='当前体型');
   const idealRows = rows.filter(r=>r.task_type==='理想体型');
 
@@ -652,7 +654,7 @@ function makeCsvWide(payload, survey){
   const sd = arr => {
     if (arr.length <= 1) return NaN;
     const m = mean(arr);
-    const s2 = arr.reduce((acc,x)=> acc + (x-m)*(x-m), 0) / (arr.length - 1); // 样本方差
+    const s2 = arr.reduce((acc,x)=> acc + (x-m)*(x-m), 0) / (arr.length - 1);
     return Math.sqrt(s2);
   };
 
@@ -664,25 +666,14 @@ function makeCsvWide(payload, survey){
   const curRtMean = mean(curRTs);
   const idealRtMean = mean(idealRTs);
 
-  head.push('task_type_当前体型_bmi_mean');
-  vals.push(fmt2(curBmiMean));
+  head.push('task_type_当前体型_bmi_mean'); vals.push(fmt2(curBmiMean));
+  head.push('task_type_当前体型_bmi_sd');   vals.push(fmt2(curBmiSd));
+  head.push('task_type_理想体型_bmi_mean'); vals.push(fmt2(idealBmiMean));
+  head.push('task_type_理想体型_bmi_sd');   vals.push(fmt2(idealBmiSd));
+  head.push('task_type_当前体型_rt_mean_ms'); vals.push(fmt0(curRtMean));
+  head.push('task_type_理想体型_rt_mean_ms'); vals.push(fmt0(idealRtMean));
 
-  head.push('task_type_当前体型_bmi_sd');
-  vals.push(fmt2(curBmiSd));
-
-  head.push('task_type_理想体型_bmi_mean');
-  vals.push(fmt2(idealBmiMean));
-
-  head.push('task_type_理想体型_bmi_sd');
-  vals.push(fmt2(idealBmiSd));
-
-  head.push('task_type_当前体型_rt_mean_ms');
-  vals.push(fmt0(curRtMean));
-
-  head.push('task_type_理想体型_rt_mean_ms');
-  vals.push(fmt0(idealRtMean));
-
-  /* ===== 把问卷并入同一行（新增） ===== */
+  /* ===== 把问卷并入同一行 ===== */
   const keySafe = (s)=> String(s ?? '').replace(/[^\w.-]+/g, '_');
   if (survey) {
     const answers = Array.isArray(survey?.answers) ? survey.answers : null;
@@ -858,7 +849,8 @@ async function uploadAllResults(){
     console.log('Uploaded CSV (long) to COS:', csvKey);
   }
 
-  if (SAVE_CSV_WIDE){
+  /* ✅ 这里按需延迟“宽表”上传到问卷回传阶段 */
+  if (SAVE_CSV_WIDE && !DEFER_WIDE_UNTIL_SURVEY){
     const csvWide = makeCsvWide({
       sessionId: payload.sessionId,
       pid: payload.pid,
@@ -874,7 +866,9 @@ async function uploadAllResults(){
         Body: new Blob([csvWideWithBOM], { type:'text/csv;charset=utf-8' })
       }, (err,data)=>err?reject(err):resolve(data));
     });
-    console.log('Uploaded CSV (wide) to COS:', wideKey);
+    console.log('Uploaded CSV (wide, no-survey) to COS:', wideKey);
+  } else {
+    console.log('Wide CSV deferred until survey is submitted.');
   }
 
   return csvKey;
@@ -910,7 +904,7 @@ async function uploadCombined(combined){
     console.log('Uploaded CSV (long, combined) to COS:', csvKey);
   }
 
-  /* ✅ 宽表：把问卷并入同一行 */
+  /* ✅ 宽表：把问卷并入同一行（这是你需要的“同表同一行”） */
   if (SAVE_CSV_WIDE && combined?.experiment?.rows?.length){
     const csvWide = makeCsvWide(combined.experiment, surveyObj);
     const wideKey = `${CSV_DIR_WIDE}/${dateDir}/${sid}.csv`;
@@ -921,10 +915,10 @@ async function uploadCombined(combined){
         Body: new Blob([csvWideWithBOM], { type:'text/csv;charset=utf-8' })
       }, (err,data)=>err?reject(err):resolve(data));
     });
-    console.log('Uploaded CSV (wide, combined) to COS:', wideKey);
+    console.log('Uploaded CSV (wide, WITH survey) to COS:', wideKey);
   }
 
-  /* 问卷：仍按原逻辑单独上传一份“问卷CSV（长表）” */
+  /* 问卷：仍按原逻辑单独上传一份“问卷CSV（长表）”，不影响你要的合并行 */
   if (SAVE_SURVEY_CSV) {
     if (surveyObj) {
       const meta = {

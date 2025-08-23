@@ -255,8 +255,11 @@
     <p>调整完成后，按“回车键（Enter）”确认选择。</p>
     <p style="margin-top:6px">请选择您的性别</p>
     <div>
-      <input id="studentId" placeholder="请输入学号" />
-      <input id="subjectNumber" placeholder="请输手机号码后4位" />
+      <input id="studentId" placeholder="请准确输入11位学号"
+       type="text" inputmode="numeric" maxlength="11" autocomplete="off" />
+      <input id="subjectNumber" placeholder="请输手机号码后4位"
+       type="text" inputmode="numeric" maxlength="4" autocomplete="off" />
+
     </div>
     <div>
       <button id="maleButton" class="btn">男性</button>
@@ -406,6 +409,34 @@ const practicePrompt = document.getElementById('practicePrompt');
 
 const studentIdEl = document.getElementById('studentId');
 const subjectNumberEl = document.getElementById('subjectNumber');
+// 只保留数字并截断到指定长度
+function sanitizeDigits(el, maxLen){
+  const v = el.value.replace(/\D/g, '').slice(0, maxLen);
+  if (el.value !== v) el.value = v;
+}
+
+// 校验：学号 11 位数字，尾号 4 位数字
+function inputsValid(){
+  return /^\d{11}$/.test(studentIdEl.value) && /^\d{4}$/.test(subjectNumberEl.value);
+}
+
+// 预加载完成后才根据输入有效性放开按钮
+function updateStartBtn(){
+  if (!preloaded) return;
+  btnStartPractice.disabled = !inputsValid();
+}
+
+// 监听输入/粘贴/失焦都做清洗与校验
+['input','paste','blur'].forEach(evt=>{
+  studentIdEl.addEventListener(evt, ()=>{ sanitizeDigits(studentIdEl, 11); updateStartBtn(); });
+  subjectNumberEl.addEventListener(evt, ()=>{ sanitizeDigits(subjectNumberEl, 4);  updateStartBtn(); });
+});
+
+// 进一步拦截单次输入的非数字（可选，提升体验）
+function blockNonDigit(e){ if (e.data && /\D/.test(e.data)) e.preventDefault(); }
+studentIdEl.addEventListener('beforeinput', blockNonDigit);
+subjectNumberEl.addEventListener('beforeinput', blockNonDigit);
+
 
 /* ✅ 新增：问卷 iframe/通信 */
 const surveyFrame = document.getElementById('surveyFrame');
@@ -1034,7 +1065,7 @@ if (maleBtn)   maleBtn.addEventListener('click', ()=>chooseGender('M'));
 if (femaleBtn) femaleBtn.addEventListener('click', ()=>chooseGender('F'));
 
 btnStartPractice.addEventListener('click', ()=>{
-  if (!preloaded){ alert('请先等待预加载完成'); return; }
+  if (!inputsValid()){alert('请按要求填写：学号为 11 位数字，手机号后 4 位为 4 位数字。');return;}
   if (!(studentIdEl.value && subjectNumberEl.value)){ alert('请先填写学号与被试序号'); return; }
   const d=new Date(), p=n=>(n<10?'0':'')+n;
   const ts = d.getFullYear()+''+p(d.getMonth()+1)+p(d.getDate())+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds());

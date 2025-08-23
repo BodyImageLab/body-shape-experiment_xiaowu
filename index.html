@@ -90,7 +90,8 @@
   .bar>span{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffe082,#ffc107 30%,#ffca28 70%,#ffd54f)}
 
   /* 刺激与提示 */
-  #stimulus{max-width:80%;height:60vh;display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);will-change:opacity,transform}
+  #stimulus{max-width:80%;height:60vh;display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);will-change:opacity,transform;contain: paint;
+  transform: translate(-50%,-50%) translateZ(0); /* 强制合成层，减少闪烁 */}
   #fixation{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:64px;color:var(--acc)}
   .hint{position:absolute;font-size:24px;color:#1e1b16;font-weight:700;background:linear-gradient(180deg,#ffe082,#ffd54f);border:0;border-radius:12px;padding:8px 12px;box-shadow:0 6px 20px rgba(0,0,0,.22)}
   .hint-left{left:8%;top:50%;transform:translateY(-50%);display:none}
@@ -297,7 +298,7 @@
 </section>
 
 <!-- 刺激层 -->
-<img id="stimulus" alt="stimulus" decoding="async" loading="eager" fetchpriority="high">
+<img id="stimulus" alt="stimulus" decoding="sync" loading="eager" fetchpriority="high">
 <div id="fixation">+</div>
 <div class="hint hint-left">长按“F”快速变瘦</div>
 <div class="hint hint-right">长按“J”快速变胖</div>
@@ -342,6 +343,8 @@
 const STS_URL    = 'https://bodyshape2025-8gk5msghc2121838-1373390636.ap-shanghai.app.tcloudbase.com/cos-sts-event';
 const COS_BUCKET = 'bodyshape-data-1373390636';
 const COS_REGION = 'ap-shanghai';
+
+const IMG_CACHE = new Map();  // url -> Image
 
 /* ✅ 新增：问卷地址（请替换为你的问卷文件路径/URL） */
 const SURVEY_URL = './survey.html';
@@ -580,13 +583,25 @@ function getSeriesURLs(which){
 async function preloadAll(urls){
   if (!urls.length) return;
   let done = 0, total = urls.length;
-  const upd = ()=>{ preloadPg.style.width = ((done/total)*100).toFixed(1) + '%'; };
+
   for (const u of urls) {
-    const im = new Image(); im.loading='eager'; im.decoding='async'; im.src=u;
+    const im = new Image();
+    im.loading = 'eager';
+    im.decoding = 'async';   // ✅ 预加载保持 async
+    im.src = u;
     try { await im.decode(); } catch(e) {}
-    done++; upd();
+    IMG_CACHE.set(u, im);    // 如果你加了缓存，继续保留
+
+    done++;
+    preloadPg.style.width = ((done/total)*100).toFixed(1) + '%';
+
+    // ✅ 关键：每加载几张让浏览器绘制一帧（进度条就会动）
+    if ((done & 3) === 0) {  // 每4张让一次
+      await new Promise(r => requestAnimationFrame(r));
+    }
   }
 }
+
 
 /* ===== BMI 映射 ===== */
 function bmiFromIndex(series, index){

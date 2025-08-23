@@ -1065,6 +1065,8 @@ if (maleBtn)   maleBtn.addEventListener('click', ()=>chooseGender('M'));
 if (femaleBtn) femaleBtn.addEventListener('click', ()=>chooseGender('F'));
 
 btnStartPractice.addEventListener('click', ()=>{
+  enterFullscreen();                    // ← 新增：点击立即进入全屏
+  if (!preloaded){ alert('请先等待预加载完成'); return; }
   if (!inputsValid()){alert('请按要求填写：学号为 11 位数字，手机号后 4 位为 4 位数字。');return;}
   if (!(studentIdEl.value && subjectNumberEl.value)){ alert('请先填写学号与被试序号'); return; }
   const d=new Date(), p=n=>(n<10?'0':'')+n;

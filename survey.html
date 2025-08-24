@@ -321,10 +321,14 @@ label.radio{ color: var(--txt); }
               </div>
               <div>
                 <label for="major">2. 专业<span style="color:#ffd86b">*</span></label>
-                <!-- 修改：仅中文 -->
+                <!-- 修改：仅中文 + 关闭浏览器自动补全 -->
                 <input id="major" name="major" type="text" placeholder="例如 心理学" required
-                       pattern="^[\u4E00-\u9FFF·\s]+$" />
+                       pattern="^[\u4E00-\u9FFF·\s]+$" autocomplete="off" />
                 <div class="err" data-err="major">必填</div>
+                <!-- 新增：英文/非中文输入法提示 -->
+                <div class="tip" id="majorHint" style="display:none;color:#ffd86b">
+                  当前为英文/非中文输入，无法录入。请切换到中文输入法（按 <kbd>Shift</kbd> 或“中/英”键）。
+                </div>
               </div>
               <div>
                 <label>9. 独生子女<span style="color:#ffd86b">*</span></label>
@@ -718,7 +722,10 @@ renderLikertList('blockB','B', SCALE_B.labels, SCALE_B.items);       // Step 5
 (function enforceInputs(){
   const age = document.getElementById('age');
   const major = document.getElementById('major');
+  const majorHint = document.getElementById('majorHint');
   const sid = document.getElementById('studentId');
+  let majorComposing = false;
+  const showMajorHint = (show)=>{ if(majorHint) majorHint.style.display = show ? 'block' : 'none'; };
 
   if (age){
     age.addEventListener('input', ()=>{
@@ -734,12 +741,35 @@ renderLikertList('blockB','B', SCALE_B.labels, SCALE_B.items);       // Step 5
       }
     });
   }
+
   if (major){
-    major.addEventListener('input', ()=>{
-      // 只保留中文汉字、间隔点与空格
+    // 合成开始：拼音/五笔候选期间不改动内容
+    major.addEventListener('compositionstart', ()=>{ majorComposing = true; });
+    // 合成结束：统一过滤一次
+    major.addEventListener('compositionend', ()=>{
+      majorComposing = false;
       major.value = major.value.replace(/[^\u4E00-\u9FFF·\s]/g,'');
+      showMajorHint(false);
     });
+    // 普通输入：非合成期才过滤，并尽量保持光标
+    major.addEventListener('input', (e)=>{
+      if (e.isComposing || majorComposing) return;
+      const before = major.value;
+      const selStart = major.selectionStart, selEnd = major.selectionEnd;
+      const filtered = before.replace(/[^\u4E00-\u9FFF·\s]/g,'');
+      if (filtered !== before){
+        major.value = filtered;
+        const diff = before.length - filtered.length;
+        const pos = Math.max(0, (selStart ?? filtered.length) - diff);
+        try{ major.setSelectionRange(pos, pos); }catch(_){}
+        showMajorHint(true);
+      }else{
+        showMajorHint(false);
+      }
+    });
+    major.addEventListener('blur', ()=> showMajorHint(false));
   }
+
   if (sid){
     sid.addEventListener('input', ()=>{
       sid.value = sid.value.replace(/\D/g,'').slice(0,11); // 只留数字，最多11位
@@ -747,7 +777,7 @@ renderLikertList('blockB','B', SCALE_B.labels, SCALE_B.items);       // Step 5
   }
 
   /* === 新增：身高/体重自动格式化（长栏内保持当前数字输入方式） === */
-  // 身高：3 位数字 => X.YZ + 'M'
+  // 身高：3 位数字 => X.YZ
   const height = document.getElementById('height');
   if (height){
     const fmtH = (digits)=>{
@@ -767,7 +797,7 @@ renderLikertList('blockB','B', SCALE_B.labels, SCALE_B.items);       // Step 5
     });
   }
 
-  // 体重：4 位数字 => XY.ZW + 'KG'
+  // 体重：4 位数字 => XY.ZW
   const weight = document.getElementById('weight');
   if (weight){
     const fmtW = (digits)=>{
